@@ -1,10 +1,10 @@
 {
-  "name": "Akıl-Zeka Platformu",
-  "short_name": "Akıl",
+  "name": "Akıl Oyunları",
+  "short_name": "Oyunlar",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#f3f4f6",
-  "theme_color": "#2563eb",
+  "theme_color": "#8b5cf6",
   "icons": [
     {
       "src": "https://cdn-icons-png.flaticon.com/512/3063/3063822.png",
