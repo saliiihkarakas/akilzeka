@@ -3,15 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <title>SHKO Yönetim Paneli</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-        // --- FIREBASE BİLGİLERİNİ BURAYA YAPIŞTIR ---
+        
+        // ==========================================
+        // FIREBASE BİLGİLERİNİ BURAYA YAPIŞTIR
+        // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyByVamD_83D1gNH9wMiR0jtQErasgq7Gss",
             authDomain: "turnuva-2418e.firebaseapp.com",
@@ -25,12 +31,105 @@
         const db = getDatabase(app);
         window.db = db; window.dbRef = ref; window.dbSet = set; window.dbOnValue = onValue; window.dbRemove = remove; window.dbUpdate = update;
     </script>
+
+    <style>
+        body { background-color: #f1f5f9; font-family: 'Fredoka', sans-serif; }
+        .btn-panel { transition:all 0.1s; border-bottom-width:4px; }
+        .btn-panel:active { transform:translateY(2px); border-bottom-width:2px; }
+        
+        /* Animasyonlar */
+        @keyframes popUp { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .animate-pop { animation: popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        /* Oyun Görselleri (Taş Efektleri) */
+        .gem-stone { box-shadow: inset -2px -2px 6px rgba(0,0,0,0.3), inset 2px 2px 6px rgba(255,255,255,0.4); }
+    </style>
 </head>
-<body class="bg-gray-100 font-sans">
+<body class="bg-slate-100 font-sans">
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect } = React;
+
+        // --- GÖRSEL BİLEŞENLER (İZLEMEK İÇİN) ---
+        const MangalaBoard = ({ game }) => {
+            const board = game.board;
+            const Pit = ({ c, owner, store }) => (
+                <div className={`relative flex justify-center items-center transition-all 
+                    ${store ? 'w-16 h-36 rounded-[2rem]' : 'w-12 h-12 rounded-full'} 
+                    ${owner==='me' ? 'bg-amber-100 border-4 border-amber-300' : 'bg-indigo-100 border-4 border-indigo-300'}
+                    shadow-[inset_0_4px_6px_rgba(0,0,0,0.1)]`}>
+                    <div className="flex flex-wrap gap-1 justify-center p-1 overflow-hidden h-full items-center content-center">
+                        {[...Array(c>8?0:c)].map((_,i)=><div key={i} className={`w-3 h-3 rounded-full gem-stone ${owner==='me'?'bg-gradient-to-br from-yellow-300 to-amber-600':'bg-gradient-to-br from-blue-300 to-indigo-600'}`}></div>)}
+                        {c>8 && <span className="font-bold text-gray-500">+{c}</span>}
+                    </div>
+                    <div className="absolute -bottom-6 bg-white px-2 py-0.5 rounded-lg text-xs font-bold border shadow-sm">{c}</div>
+                </div>
+            );
+
+            return (
+                <div className="bg-[#603c27] p-3 rounded-[2rem] border-b-8 border-[#3e2415] shadow-2xl mx-auto max-w-3xl">
+                    <div className="bg-[#8B5A2B] p-4 rounded-[1.5rem] border-4 border-[#724a2f] flex items-center justify-between gap-2">
+                         <div className="flex flex-col items-center gap-2"><span className="text-white/70 text-xs font-bold">{game.players.p2.name}</span><Pit c={game.board[13]} owner="opponent" store={true} /></div>
+                         <div className="flex flex-col gap-3 flex-1">
+                            <div className="flex justify-between flex-row-reverse bg-black/10 p-2 rounded-xl">{[0,1,2,3,4,5].map(i => <Pit key={12-i} c={board[12-i]} owner="opponent"/>)}</div>
+                            <div className="flex justify-between bg-black/10 p-2 rounded-xl">{[0,1,2,3,4,5].map(i => <Pit key={i} c={board[i]} owner="me"/>)}</div>
+                         </div>
+                         <div className="flex flex-col items-center gap-2"><span className="text-white/70 text-xs font-bold">{game.players.p1.name}</span><Pit c={game.board[6]} owner="me" store={true} /></div>
+                    </div>
+                </div>
+            );
+        };
+
+        const ReversiBoard = ({ game }) => (
+            <div className="flex flex-col items-center gap-4">
+                <div className="flex gap-4">
+                    <div className="flex items-center gap-2 bg-gray-800 text-white px-4 py-1 rounded-full"><div className="w-4 h-4 bg-black border border-gray-500 rounded-full"></div> {game.board.filter(x=>x===1).length}</div>
+                    <div className="flex items-center gap-2 bg-white text-gray-800 px-4 py-1 rounded-full border"><div className="w-4 h-4 bg-white border border-gray-400 rounded-full"></div> {game.board.filter(x=>x===2).length}</div>
+                </div>
+                <div className="bg-green-700 p-2 rounded-xl border-4 border-green-800 shadow-xl">
+                    <div className="grid grid-cols-8 gap-1">
+                        {game.board.map((cell, i) => (
+                            <div key={i} className="w-8 h-8 bg-green-500 rounded flex items-center justify-center shadow-inner">
+                                {cell !== 0 && <div className={`w-3/4 h-3/4 rounded-full shadow-md gem-stone ${cell===1?'bg-gray-900 border border-gray-600':'bg-white border border-gray-300'}`}></div>}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+
+        // --- İZLEME MODALI ---
+        const SpectatorModal = ({ game, gameId, onClose }) => {
+            if (!game) return null;
+            return (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-pop">
+                    <div className="bg-slate-100 rounded-[2rem] w-full max-w-4xl overflow-hidden shadow-2xl relative flex flex-col">
+                        {/* Header */}
+                        <div className="bg-slate-800 text-white p-4 flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <span className="bg-red-600 px-3 py-1 rounded-full text-xs font-bold animate-pulse">CANLI YAYIN 🔴</span>
+                                <h2 className="font-bold text-lg">Masa: {gameId}</h2>
+                            </div>
+                            <button onClick={onClose} className="bg-white/10 hover:bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">✕</button>
+                        </div>
+
+                        {/* Oyun Alanı */}
+                        <div className="p-8 flex flex-col items-center justify-center flex-1 bg-pattern min-h-[400px]">
+                            <div className="flex justify-between w-full max-w-2xl mb-6 font-bold text-xl text-slate-700 bg-white/50 p-4 rounded-xl backdrop-blur">
+                                <div className="text-indigo-600 flex items-center gap-2"><i className="fas fa-user"></i> {game.players.p1.name}</div>
+                                <div className="bg-white px-4 py-1 rounded-full text-sm shadow border">
+                                    Sıra: <span className={game.isP1Turn ? 'text-indigo-600' : 'text-orange-600'}>{game.isP1Turn ? game.players.p1.name : game.players.p2.name}</span>
+                                </div>
+                                <div className="text-orange-600 flex items-center gap-2">{game.players.p2.name} <i className="fas fa-user"></i></div>
+                            </div>
+
+                            {game.type === 'reversi' ? <ReversiBoard game={game} /> : <MangalaBoard game={game} />}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
 
         const AdminPanel = () => {
             const [view, setView] = useState("dashboard");
@@ -44,6 +143,9 @@
             const [newSchoolName, setNewSchoolName] = useState("");
             const [selectedSchoolFilter, setSelectedSchoolFilter] = useState("");
             const [showGameSelector, setShowGameSelector] = useState(false);
+            
+            // YENİ: İZLEME STATE'İ
+            const [spectatingGameId, setSpectatingGameId] = useState(null);
 
             useEffect(() => {
                 if(!isLoggedIn) return;
@@ -56,12 +158,13 @@
 
             const addSchool = () => { if(!newSchoolName.trim()) return; const id = newSchoolName.toLowerCase().replace(/[^a-z0-9]/g, ''); window.dbSet(window.dbRef(window.db, 'schools/' + id), { name: newSchoolName, id }); setNewSchoolName(""); };
             const deleteSchool = (id) => { if(confirm("Silinsin mi?")) window.dbRemove(window.dbRef(window.db, 'schools/' + id)); };
-            const approveUser = (uid, data) => { if(confirm(`${data.name} onaylansın mı?`)) { window.dbSet(window.dbRef(window.db, 'users/' + uid), data); window.dbRemove(window.dbRef(window.db, 'pending_users/' + uid)); }};
+            const approveUser = (uid, data) => { if(confirm("Onaylansın mı?")) { window.dbSet(window.dbRef(window.db, 'users/' + uid), data); window.dbRemove(window.dbRef(window.db, 'pending_users/' + uid)); }};
             const rejectUser = (uid) => { if(confirm("Reddedilsin mi?")) window.dbRemove(window.dbRef(window.db, 'pending_users/' + uid)); };
             const deleteStudent = (uid, name) => { if(confirm(`${name} silinsin mi?`)) { window.dbRemove(window.dbRef(window.db, 'users/' + uid)); window.dbRemove(window.dbRef(window.db, 'lobby/' + uid)); } };
             const deleteGame = (id) => window.dbRemove(window.dbRef(window.db, 'games/' + id));
             const resetSystem = () => { if(confirm("Her şey silinsin mi?")) { window.dbRemove(window.dbRef(window.db, 'games')); window.dbRemove(window.dbRef(window.db, 'lobby')); }};
-            
+            const handleLogout = () => { setIsLoggedIn(false); setPassword(""); };
+
             const startTournament = (type) => {
                 setShowGameSelector(false);
                 const waiting = Object.entries(lobbyUsers).filter(([_, u]) => u.state === 'waiting').map(([id, u]) => ({...u, id}));
@@ -80,56 +183,97 @@
                 }
             };
 
-            const handleLogout = () => { setIsLoggedIn(false); setPassword(""); };
-
-            if (!isLoggedIn) return (<div className="min-h-screen flex items-center justify-center bg-gray-800"><div className="bg-white p-8 rounded text-center"><h2 className="text-xl font-bold mb-4">SHKO Yönetim</h2><input type="password" value={password} onChange={e=>setPassword(e.target.value)} className="border p-2 mb-4" placeholder="Şifre (1234)" /><button onClick={()=>password==="1234"&&setIsLoggedIn(true)} className="bg-blue-600 text-white w-full py-2 rounded">GİRİŞ</button></div></div>);
+            if (!isLoggedIn) return (<div className="min-h-screen flex items-center justify-center bg-slate-800"><div className="bg-white p-10 rounded-[2rem] text-center shadow-xl"><h2 className="text-3xl font-extrabold text-slate-700 mb-6">YÖNETİCİ GİRİŞİ</h2><input type="password" value={password} onChange={e=>setPassword(e.target.value)} className="border-4 border-slate-200 p-3 rounded-xl mb-4 text-center font-bold text-lg outline-none focus:border-purple-400" placeholder="Şifre (1234)" /><button onClick={()=>password==="1234"&&setIsLoggedIn(true)} className="bg-purple-600 text-white w-full py-3 rounded-xl font-bold btn-panel border-purple-800 shadow-lg">GİRİŞ YAP</button></div></div>);
 
             const pendingCount = Object.keys(pendingUsers).length;
 
             return (
-                <div className="min-h-screen bg-gray-100 p-6 max-w-7xl mx-auto">
-                    {showGameSelector && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white p-8 rounded-xl shadow-2xl text-center"><h3 className="text-xl font-bold mb-6">Turnuva Seç</h3><div className="flex gap-4"><button onClick={() => startTournament('mangala')} className="bg-amber-600 text-white px-6 py-4 rounded-xl font-bold w-32">Mangala</button><button onClick={() => startTournament('reversi')} className="bg-green-700 text-white px-6 py-4 rounded-xl font-bold w-32">Reversi</button></div><button onClick={() => setShowGameSelector(false)} className="mt-6 text-gray-500 underline text-sm">İptal</button></div></div>)}
+                <div className="min-h-screen bg-slate-100 p-4 max-w-7xl mx-auto">
+                    {/* MODALLAR */}
+                    {spectatingGameId && games[spectatingGameId] && (
+                        <SpectatorModal game={games[spectatingGameId]} gameId={spectatingGameId} onClose={()=>setSpectatingGameId(null)} />
+                    )}
+                    
+                    {showGameSelector && (<div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"><div className="bg-white p-8 rounded-[2rem] shadow-2xl text-center animate-pop"><h3 className="text-2xl font-bold mb-6 text-slate-700">Turnuva Modu Seç</h3><div className="flex gap-4"><button onClick={() => startTournament('mangala')} className="bg-amber-500 text-white px-8 py-6 rounded-2xl font-bold btn-panel border-amber-700 w-40 text-lg">MANGALA</button><button onClick={() => startTournament('reversi')} className="bg-green-600 text-white px-8 py-6 rounded-2xl font-bold btn-panel border-green-800 w-40 text-lg">REVERSİ</button></div><button onClick={() => setShowGameSelector(false)} className="mt-8 text-slate-400 font-bold hover:text-slate-600">İPTAL</button></div></div>)}
 
-                    <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                        <div className="flex flex-wrap gap-2">
-                            <button onClick={()=>setView("dashboard")} className={`px-4 py-2 rounded-lg font-bold shadow ${view==='dashboard'?'bg-indigo-600 text-white':'bg-white text-gray-600'}`}>Turnuva</button>
-                            <button onClick={()=>setView("students")} className={`px-4 py-2 rounded-lg font-bold shadow ${view==='students'?'bg-purple-600 text-white':'bg-white text-gray-600'}`}>Öğrenciler</button>
-                            <button onClick={()=>setView("approvals")} className={`px-4 py-2 rounded-lg font-bold shadow ${view==='approvals'?'bg-orange-600 text-white':'bg-white text-gray-600'}`}>Onaylar {pendingCount>0 && <span className="bg-red-500 text-white px-2 rounded-full text-xs ml-1">{pendingCount}</span>}</button>
-                            <button onClick={()=>setView("schools")} className={`px-4 py-2 rounded-lg font-bold shadow ${view==='schools'?'bg-teal-600 text-white':'bg-white text-gray-600'}`}>Okullar</button>
+                    {/* MENÜ */}
+                    <div className="bg-white p-4 rounded-2xl shadow-sm mb-6 flex flex-wrap justify-between items-center gap-4">
+                        <div className="flex gap-2">
+                             <button onClick={()=>setView("dashboard")} className={`px-4 py-2 rounded-xl font-bold transition-all ${view==='dashboard'?'bg-purple-600 text-white shadow-lg scale-105':'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>TURNUVA</button>
+                             <button onClick={()=>setView("students")} className={`px-4 py-2 rounded-xl font-bold transition-all ${view==='students'?'bg-blue-600 text-white shadow-lg scale-105':'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>ÖĞRENCİLER</button>
+                             <button onClick={()=>setView("approvals")} className={`px-4 py-2 rounded-xl font-bold transition-all ${view==='approvals'?'bg-orange-500 text-white shadow-lg scale-105':'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>ONAYLAR {pendingCount>0 && <span className="bg-white text-orange-600 px-2 rounded-full text-xs ml-1 shadow">{pendingCount}</span>}</button>
+                             <button onClick={()=>setView("schools")} className={`px-4 py-2 rounded-xl font-bold transition-all ${view==='schools'?'bg-teal-600 text-white shadow-lg scale-105':'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>OKULLAR</button>
                         </div>
-                        <button onClick={handleLogout} className="bg-red-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-red-700 shadow flex items-center gap-2"><i className="fas fa-sign-out-alt"></i> ÇIKIŞ</button>
+                        <button onClick={handleLogout} className="bg-red-500 text-white px-6 py-2 rounded-xl font-bold btn-panel border-red-700">ÇIKIŞ</button>
                     </div>
 
+                    {/* İÇERİK: ÖĞRENCİLER */}
                     {view === "students" && (
-                        <div className="bg-white p-6 rounded-xl shadow">
-                             <div className="mb-4 flex gap-4"><h2 className="text-xl font-bold">Öğrenci Listesi</h2><select onChange={e=>setSelectedSchoolFilter(e.target.value)} className="border p-1 rounded"><option value="">Tüm Okullar</option>{Object.values(schools).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
-                             <div className="overflow-x-auto"><table className="w-full text-left text-sm border-collapse"><thead><tr className="bg-gray-100"><th className="p-3">Ad</th><th className="p-3">No</th><th className="p-3">Sınıf</th><th className="p-3">Okul</th><th className="p-3">Başarı</th><th className="p-3">Sil</th></tr></thead><tbody>
-                             {Object.entries(allUsers).filter(([_,u])=>!selectedSchoolFilter||u.schoolId===selectedSchoolFilter).map(([uid,u])=>(<tr key={uid} className="border-b hover:bg-gray-50"><td className="p-3 font-bold">{u.name}</td><td className="p-3">{u.number}</td><td className="p-3"><span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold">{u.class}</span></td><td className="p-3">{u.schoolName}</td><td className="p-3">🏆{u.stats?.wins||0}</td><td className="p-3"><button onClick={()=>deleteStudent(uid,u.name)} className="text-red-500 font-bold hover:underline">SİL</button></td></tr>))}
-                             </tbody></table></div>
+                        <div className="bg-white p-6 rounded-[2rem] shadow-sm">
+                             <div className="mb-6 flex flex-wrap gap-4 items-center justify-between">
+                                 <h2 className="text-2xl font-bold text-slate-700">🎓 Kayıtlı Öğrenciler <span className="text-slate-400 text-lg ml-2">({Object.keys(allUsers).length})</span></h2>
+                                 <select onChange={e=>setSelectedSchoolFilter(e.target.value)} className="bg-slate-100 font-bold text-slate-600 p-2 rounded-lg outline-none border-2 border-slate-200"><option value="">Tüm Okullar</option>{Object.values(schools).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select>
+                             </div>
+                             <div className="overflow-x-auto"><table className="w-full text-left text-sm border-collapse"><thead><tr className="bg-slate-100 text-slate-500"><th className="p-4 rounded-l-xl">AD SOYAD</th><th className="p-4">NO</th><th className="p-4">SINIF</th><th className="p-4">OKUL</th><th className="p-4">BAŞARI</th><th className="p-4 rounded-r-xl text-center">İŞLEM</th></tr></thead><tbody className="text-slate-600">{Object.entries(allUsers).filter(([_,u])=>!selectedSchoolFilter||u.schoolId===selectedSchoolFilter).map(([uid,u])=>(<tr key={uid} className="border-b border-slate-100 hover:bg-purple-50 transition-colors"><td className="p-4 font-bold text-slate-800">{u.name}</td><td className="p-4 font-mono font-bold bg-slate-50 rounded">{u.number}</td><td className="p-4"><span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-lg font-bold">{u.class}</span></td><td className="p-4 font-medium">{u.schoolName}</td><td className="p-4"><div className="flex gap-2"><span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded font-bold">🏆 {u.stats?.wins||0}</span><span className="bg-purple-100 text-purple-700 px-2 py-1 rounded font-bold">🎖️ {(u.badges||[]).length}</span></div></td><td className="p-4 text-center"><button onClick={()=>deleteStudent(uid,u.name)} className="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white px-3 py-1 rounded-lg font-bold transition-all">SİL</button></td></tr>))}</tbody></table></div>
                         </div>
                     )}
 
+                    {/* İÇERİK: OKULLAR */}
                     {view === "schools" && (
-                        <div className="bg-white p-6 rounded-xl shadow">
-                            <h2 className="text-xl font-bold mb-4">Okul Listesi</h2>
-                            <div className="flex gap-2 mb-4"><input value={newSchoolName} onChange={e=>setNewSchoolName(e.target.value)} placeholder="Yeni Okul Adı" className="border p-2 rounded flex-1" /><button onClick={addSchool} className="bg-teal-600 text-white px-4 rounded font-bold">EKLE</button></div>
-                            <div className="grid gap-2">{Object.values(schools).map(s=>(<div key={s.id} className="border p-3 rounded flex justify-between bg-gray-50"><span className="font-bold">{s.name}</span><button onClick={()=>deleteSchool(s.id)} className="text-red-500 font-bold text-sm">SİL</button></div>))}</div>
+                        <div className="bg-white p-6 rounded-[2rem] shadow-sm">
+                            <h2 className="text-2xl font-bold text-slate-700 mb-6">🏫 Okul Yönetimi</h2>
+                            <div className="flex gap-3 mb-6"><input value={newSchoolName} onChange={e=>setNewSchoolName(e.target.value)} placeholder="Yeni Okul Adı" className="border-4 border-slate-100 p-3 rounded-xl flex-1 font-bold outline-none focus:border-teal-400" /><button onClick={addSchool} className="bg-teal-500 text-white px-6 rounded-xl font-bold btn-panel border-teal-700">EKLE</button></div>
+                            <div className="grid gap-3">{Object.values(schools).map(school => (<div key={school.id} className="bg-slate-50 p-4 rounded-xl flex justify-between items-center border-2 border-slate-100"><span className="font-bold text-slate-700 text-lg">{school.name}</span><button onClick={()=>deleteSchool(school.id)} className="text-red-400 hover:text-red-600 font-bold bg-white px-3 py-1 rounded-lg border border-red-100">SİL</button></div>))}</div>
                         </div>
                     )}
 
+                    {/* İÇERİK: ONAYLAR */}
                     {view === "approvals" && (
-                        <div className="bg-white p-6 rounded-xl shadow"><h2 className="text-xl font-bold mb-4">Onay Bekleyenler</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{Object.entries(pendingUsers).map(([uid,u])=>(<div key={uid} className="border p-4 rounded bg-orange-50"><div className="font-bold">{u.name}</div><div className="text-sm text-indigo-700">{u.schoolName}</div><div className="text-sm text-gray-500">{u.class} - {u.number}</div><div className="flex gap-2 mt-2"><button onClick={()=>approveUser(uid,u)} className="flex-1 bg-green-600 text-white py-1 rounded text-sm font-bold">ONAYLA</button><button onClick={()=>rejectUser(uid)} className="flex-1 bg-red-100 text-red-600 py-1 rounded text-sm font-bold">REDDET</button></div></div>))}
-                            {pendingCount===0 && <p className="text-gray-400">Yok.</p>}</div>
+                        <div className="bg-white p-6 rounded-[2rem] shadow-sm">
+                            <h2 className="text-2xl font-bold text-slate-700 mb-6">✅ Onay Bekleyenler</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {Object.entries(pendingUsers).map(([uid,u])=>(<div key={uid} className="border-2 border-orange-100 p-5 rounded-2xl bg-orange-50/50"><div className="font-extrabold text-xl text-slate-800 mb-1">{u.name}</div><div className="text-indigo-600 font-bold text-sm mb-2">{u.schoolName}</div><div className="bg-white/50 p-2 rounded-lg text-sm text-slate-500 font-bold mb-4 flex justify-between"><span>{u.class}</span><span>#{u.number}</span></div><div className="flex gap-2"><button onClick={()=>approveUser(uid,u)} className="flex-1 bg-green-500 text-white py-2 rounded-xl font-bold btn-panel border-green-700">ONAYLA</button><button onClick={()=>rejectUser(uid)} className="flex-1 bg-red-100 text-red-500 py-2 rounded-xl font-bold hover:bg-red-200">REDDET</button></div></div>))}
+                                {pendingCount===0 && <p className="text-slate-400 font-bold italic">Şu an onay bekleyen kimse yok.</p>}
+                            </div>
                         </div>
                     )}
 
+                    {/* İÇERİK: DASHBOARD (TURNUVA) */}
                     {view === "dashboard" && (
-                         <div className="bg-white p-6 rounded-xl shadow">
-                            <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-bold">Turnuva Yönetimi</h2><div className="flex gap-2"><button onClick={resetSystem} className="text-red-600 border border-red-200 px-4 py-2 rounded text-sm font-bold">Sıfırla</button><button onClick={()=>setShowGameSelector(true)} className="bg-indigo-600 text-white px-4 py-2 rounded font-bold shadow animate-pulse">EŞLEŞTİR</button></div></div>
+                         <div className="bg-white p-6 rounded-[2rem] shadow-sm">
+                            <div className="flex flex-wrap justify-between items-center mb-8 gap-4">
+                                <h2 className="text-2xl font-bold text-slate-700">🎮 Turnuva Kontrol</h2>
+                                <div className="flex gap-3">
+                                    <button onClick={resetSystem} className="text-red-400 font-bold border-2 border-red-100 px-4 py-2 rounded-xl hover:bg-red-50">SIFIRLA</button>
+                                    <button onClick={()=>setShowGameSelector(true)} className="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold btn-panel border-indigo-800 shadow-indigo-200 shadow-lg animate-pulse">EŞLEŞTİRME YAP ⚡</button>
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                                <div className="bg-gray-50 p-4 rounded border"><h3 className="font-bold text-gray-600 mb-2">Lobi ({Object.keys(lobbyUsers).length})</h3><div className="space-y-1 max-h-96 overflow-auto">{Object.values(lobbyUsers).map((u,i)=>(<div key={i} className={`text-sm p-2 rounded flex justify-between ${u.state==='waiting'?'bg-green-100 text-green-800':'bg-white text-gray-400'}`}><span>{u.name}</span><span>{u.state==='waiting'?'⏳':'🎮'}</span></div>))}</div></div>
-                                <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{Object.entries(games).reverse().map(([id,g])=>(<div key={id} className={`border p-3 rounded shadow-sm bg-white ${g.winner?'opacity-70':''}`}><div className="flex justify-between text-xs font-bold mb-2"><span className="text-gray-400">MASA {id}</span><span className="text-indigo-600 uppercase">{g.type}</span></div><div className="font-bold text-center mb-2">{g.players.p1.name} vs {g.players.p2.name}</div><div className="text-center text-xl font-bold text-indigo-700 bg-indigo-50 rounded p-1 mb-2">{g.board?g.board[6]:0} - {g.board?g.board[13]:0}</div>{g.winner&&<div className="bg-yellow-100 text-yellow-800 text-center text-sm font-bold rounded py-1 mb-2">🏆 {g.winner}</div>}<button onClick={()=>deleteGame(id)} className="w-full bg-red-50 text-red-600 text-xs py-1 rounded font-bold">MASAYI KAPAT</button></div>))}</div>
+                                <div className="bg-slate-50 p-5 rounded-[1.5rem] border-2 border-slate-100 h-fit">
+                                    <h3 className="font-bold text-slate-500 mb-4 tracking-wider text-sm">LOBİDEKİLER ({Object.keys(lobbyUsers).length})</h3>
+                                    <div className="space-y-2 max-h-[500px] overflow-auto pr-2">
+                                        {Object.values(lobbyUsers).map((u,i)=>(<div key={i} className={`p-3 rounded-xl flex justify-between items-center transition-all ${u.state==='waiting'?'bg-green-100 text-green-800 border border-green-200 shadow-sm':'bg-white text-slate-400 opacity-60'}`}><span className="font-bold text-sm">{u.name}</span><span className="text-xs font-bold bg-white/50 px-2 py-1 rounded">{u.state==='waiting'?'HAZIR':'OYUNDA'}</span></div>))}
+                                        {Object.keys(lobbyUsers).length === 0 && <p className="text-slate-400 text-sm text-center italic">Kimse yok...</p>}
+                                    </div>
+                                </div>
+
+                                <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {Object.entries(games).reverse().map(([id,g])=>(
+                                        <div key={id} className={`border-2 p-4 rounded-2xl bg-white transition-all flex flex-col justify-between ${g.winner?'opacity-60 border-slate-100':'border-indigo-100 shadow-lg'}`}>
+                                            <div>
+                                                <div className="flex justify-between text-xs font-extrabold mb-3"><span className="text-slate-400 tracking-widest">MASA {id}</span><span className="text-purple-600 bg-purple-50 px-2 py-0.5 rounded uppercase">{g.type}</span></div>
+                                                <div className="flex justify-between items-center mb-4"><div className="font-bold text-slate-700 text-sm w-20 truncate">{g.players.p1.name}</div><div className="text-xs text-slate-300 font-bold">VS</div><div className="font-bold text-slate-700 text-sm w-20 truncate text-right">{g.players.p2.name}</div></div>
+                                                <div className="text-center text-2xl font-black text-indigo-600 bg-indigo-50 rounded-xl py-2 mb-3 border border-indigo-100">{g.board?g.board[6]:0} <span className="text-indigo-300 mx-2">:</span> {g.board?g.board[13]:0}</div>
+                                                {g.winner ? (<div className="bg-yellow-100 text-yellow-700 text-center text-xs font-bold rounded-lg py-2 mb-3 border border-yellow-200">🏆 {g.winner}</div>) : (<div className="bg-green-100 text-green-700 text-center text-xs font-bold rounded-lg py-2 mb-3 border border-green-200 animate-pulse">● OYNANIYOR</div>)}
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button onClick={()=>setSpectatingGameId(id)} className="flex-1 bg-indigo-600 text-white text-xs py-2 rounded-xl font-bold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-1"><i className="fas fa-eye"></i> İZLE</button>
+                                                <button onClick={()=>deleteGame(id)} className="flex-1 bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-500 text-xs py-2 rounded-xl font-bold transition-colors">SİL</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                          </div>
                     )}
