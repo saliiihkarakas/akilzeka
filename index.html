@@ -74,30 +74,28 @@
                 if (gameData.winner) return;
                 
                 const isP1Turn = gameData.isP1Turn;
-                const board = [...gameData.board];
+                // KRİTİK DÜZELTME: Gelen veriyi kesinlikle sayıya çeviriyoruz (String hatasını önlemek için)
+                const board = gameData.board.map(n => parseInt(n, 10)); 
 
-                // Sıra kontrolü
+                // Sıra ve Yetki Kontrolü
                 if ((playerRole === 'P1' && !isP1Turn) || (playerRole === 'P2' && isP1Turn)) return;
-                
-                // Yanlış bölgeye tıklama kontrolü
                 if (isP1Turn && (pitIndex < 0 || pitIndex > 5)) return;
                 if (!isP1Turn && (pitIndex < 7 || pitIndex > 12)) return;
-                
-                // Boş kuyuya tıklanmaz
                 if (board[pitIndex] === 0) return;
 
                 let stones = board[pitIndex];
                 let currentIndex = pitIndex;
                 board[pitIndex] = 0; // Kuyuyu boşalt
 
-                // 1. TEMEL KURAL: TEK TAŞ VARSA
+                // --- DAĞITIM MANTIĞI ---
+                // 1. Durum: Sadece 1 taş varsa (Direkt yana kaydır)
                 if (stones === 1) {
                     currentIndex = (currentIndex + 1) % 14;
                     board[currentIndex] += 1;
                 } 
-                // 1. TEMEL KURAL: ÇOK TAŞ VARSA (Aldığı kuyuya bırakarak dağıt)
+                // 2. Durum: Çok taş varsa (Kendi kuyusuna bırakarak dağıt)
                 else {
-                    board[currentIndex] = 1; 
+                    board[currentIndex] = 1; // Aldığı yere 1 bırak
                     stones--; 
                     
                     while (stones > 0) {
@@ -111,44 +109,49 @@
                     }
                 }
 
+                // --- KURALLAR VE SONUÇLAR ---
                 const lastIndex = currentIndex;
-                
-                // Bölge Tanımları
                 const p1Store = 6;
                 const p2Store = 13;
+                
+                // Bölge Kontrolleri
                 const isMyStore = isP1Turn ? lastIndex === p1Store : lastIndex === p2Store;
-                const isMySide = isP1Turn ? (lastIndex >= 0 && lastIndex <= 5) : (lastIndex >= 7 && lastIndex <= 12);
                 const isOpponentSide = isP1Turn ? (lastIndex >= 7 && lastIndex <= 12) : (lastIndex >= 0 && lastIndex <= 5);
+                const isMySide = isP1Turn ? (lastIndex >= 0 && lastIndex <= 5) : (lastIndex >= 7 && lastIndex <= 12);
 
-                let nextTurnIsP1 = !isP1Turn;
+                let nextTurnIsP1 = !isP1Turn; // Normalde sıra rakibe geçer
 
-                // TEKRAR OYNAMA KURALI: Son taş hazineye gelirse
+                // KURAL 1: Son taş hazineye gelirse sıra yine bende
                 if (isMyStore) {
                     nextTurnIsP1 = isP1Turn; 
                 }
-                // 2. TEMEL KURAL: ÇİFT YAPMA (Rakip Bölge)
+                // KURAL 2: ÇİFT YAPMA (Rakip bölgedeyse ve çift ise hepsini al)
                 else if (isOpponentSide && board[lastIndex] % 2 === 0) {
                     const myStoreIndex = isP1Turn ? p1Store : p2Store;
+                    // O kuyudaki TÜM taşları alıp hazineye ekle
                     board[myStoreIndex] += board[lastIndex];
-                    board[lastIndex] = 0;
+                    board[lastIndex] = 0; // Kuyuyu sıfırla
                 }
-                // 3. TEMEL KURAL: TİLKİ (Kendi Boş Kuyun)
+                // KURAL 3: TİLKİ (Kendi boş kuyuma geldiyse ve karşı doluysa)
                 else if (isMySide && board[lastIndex] === 1) { 
+                    // board[lastIndex] === 1 demek, orası boştu ve ben 1 taş koydum demektir.
                     const oppositeIndex = 12 - lastIndex;
                     if (board[oppositeIndex] > 0) {
                         const myStoreIndex = isP1Turn ? p1Store : p2Store;
+                        // Hem karşıdakini hem bendekini al
                         board[myStoreIndex] += (board[lastIndex] + board[oppositeIndex]);
                         board[lastIndex] = 0;
                         board[oppositeIndex] = 0;
                     }
                 }
 
-                // 4. TEMEL KURAL: OYUN SONU (Biten taraf rakibi de alır)
+                // KURAL 4: OYUN SONU KONTROLÜ
                 const p1PitSum = board.slice(0, 6).reduce((a, b) => a + b, 0);
                 const p2PitSum = board.slice(7, 13).reduce((a, b) => a + b, 0);
                 let w = null;
 
                 if (p1PitSum === 0 || p2PitSum === 0) {
+                    // Oyun bitti, rakibin taşlarını da hazineye çek
                     if (p1PitSum === 0) {
                         board[p1Store] += p2PitSum;
                         for(let i=7; i<=12; i++) board[i] = 0;
@@ -167,7 +170,12 @@
                     }
                 }
 
-                window.dbUpdate(window.dbRef(window.db, 'games/' + gameId), { board: board, isP1Turn: nextTurnIsP1, winner: w });
+                // Veritabanını Güncelle
+                window.dbUpdate(window.dbRef(window.db, 'games/' + gameId), { 
+                    board: board, 
+                    isP1Turn: nextTurnIsP1, 
+                    winner: w 
+                });
             };
             return { moveStone };
         }
