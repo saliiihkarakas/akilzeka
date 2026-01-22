@@ -8,7 +8,7 @@
     <title>Akıl Zeka Oyunları - Pro Arena</title>
     
     <link rel="manifest" href="manifest.json">
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&display=swap" rel="stylesheet">
     
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
@@ -39,11 +39,11 @@
         /* --- RESET & APP SHELL --- */
         html, body {
             width: 100%; height: 100%; margin: 0; padding: 0;
-            overflow: hidden; /* Sayfa kaydırmayı tamamen kapat */
-            background-color: #030712; /* Çok koyu lacivert */
+            overflow: hidden; 
+            background-color: #030712; 
             color: white;
             font-family: 'Rajdhani', sans-serif;
-            touch-action: none; /* Mobilde çekme/yenileme hareketlerini engelle */
+            touch-action: none;
             -webkit-user-select: none; user-select: none;
         }
 
@@ -61,8 +61,8 @@
 
         /* --- COMPONENT STYLES --- */
         .glass-panel {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
         }
@@ -83,7 +83,7 @@
         .marble {
             border-radius: 50%;
             position: absolute;
-            box-shadow: inset -2px -2px 4px rgba(0,0,0,0.7), inset 2px 2px 4px rgba(255,255,255,0.8), 0 0 5px rgba(255,255,255,0.5);
+            box-shadow: inset -1px -1px 2px rgba(0,0,0,0.8), inset 1px 1px 2px rgba(255,255,255,0.9), 0 0 5px rgba(255,255,255,0.2);
         }
 
         /* --- ANIMATIONS --- */
@@ -99,7 +99,7 @@
         const { useState, useEffect, useRef } = React;
         const BADGES = { first_win: {icon:"⭐",name:"İlk Zafer"}, mangala_master: {icon:"🦁",name:"Mangala Kurdu"}, reversi_brain: {icon:"🧠",name:"Strateji Dehası"}, streak_fire: {icon:"🔥",name:"Yenilmez"} };
 
-        // --- GAME LOGIC (FIXED) ---
+        // --- GAME LOGIC ---
         function useMangalaGame(gameData, gameId, playerRole, onWin) {
             const moveStone = (pitIndex) => {
                 if (gameData.winner) return;
@@ -183,32 +183,41 @@
             return { makeMove };
         }
 
-        // --- AKILLI ÖLÇEKLEYİCİ (THE MAGIC FIX) ---
-        // Bu bileşen, içine koyduğun her şeyi ekrana tam sığdırır. Taşma yapmaz.
-        const FitScreen = ({ children, targetW = 900, targetH = 550 }) => {
+        // --- ULTRA RESPONSIVE SCALER (Fixed Landscape Issue) ---
+        const FitScreen = ({ children }) => {
             const [scale, setScale] = useState(1);
-            const [isPortrait, setIsPortrait] = useState(false);
             const containerRef = useRef(null);
 
             useEffect(() => {
                 const resize = () => {
-                    if(!containerRef.current) return;
                     const w = window.innerWidth;
                     const h = window.innerHeight;
+                    const isLandscape = w > h;
                     
-                    // Mobilde header/footer payı
-                    const safeH = h - 80; 
-                    const safeW = w - 20;
+                    // MOBIL MANZARA MODU (Landscape) OPTİMİZASYONU
+                    // Ekranı olabildiğince doldurmak için hedef boyutları küçültüyoruz
+                    // Böylece scale oranı (Ekran / Hedef) artıyor ve oyun büyüyor.
+                    
+                    let targetW = 900;
+                    let targetH = 500;
+
+                    let safeW = w - 20; // Default padding
+                    let safeH = h - 80; // Default header payı
+
+                    if (isLandscape && h < 500) { 
+                        // Telefonu yan çevirdiysen
+                        safeH = h - 20; // Header'ı yok say veya üstüne bin
+                        targetH = 450; // Hedef yüksekliği kıs
+                        targetW = 850; // Hedef genişliği kıs
+                    }
 
                     const scaleX = safeW / targetW;
                     const scaleY = safeH / targetH;
                     
-                    // En küçük orana göre küçült ki sığsın
                     let s = Math.min(scaleX, scaleY);
-                    if(s > 1.2) s = 1.2; // Çok büyümesin (PC için)
+                    if(s > 1.3) s = 1.3; // PC'de aşırı büyümeyi engelle
                     
                     setScale(s);
-                    setIsPortrait(h > w);
                 };
                 window.addEventListener('resize', resize);
                 resize();
@@ -218,35 +227,28 @@
             return (
                 <div className="flex-1 flex items-center justify-center relative w-full h-full overflow-hidden">
                     <div ref={containerRef} style={{
-                        width: targetW, height: targetH,
+                        width: '900px', // Base width
+                        height: '500px', // Base height
                         transform: `scale(${scale})`,
                         transformOrigin: 'center center',
-                        transition: 'transform 0.2s'
+                        transition: 'transform 0.2s',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
                     }}>
                         {children}
                     </div>
-                    
-                    {/* Dik Tutuş Uyarısı (Sadece Oyun Oynarken) */}
-                    {isPortrait && scale < 0.5 && (
-                        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-yellow-500/20 text-yellow-300 text-[10px] px-3 py-1 rounded-full border border-yellow-500/50 animate-pulse pointer-events-none">
-                            <i className="fas fa-mobile-alt rotate-90 mr-2"></i> Ekranı Yan Çevir
-                        </div>
-                    )}
                 </div>
             );
         };
 
-        // --- OYUN GÖRSELLERİ ---
+        // --- COMPONENTS ---
         const MangalaBoard = ({ game, playerRole, onMove }) => {
             const board = (game.board || []).map(n => parseInt(n, 10) || 0);
             const isMyTurn = (playerRole === 'P1' && game.isP1Turn) || (playerRole === 'P2' && !game.isP1Turn);
 
             const Pit = ({ c, owner, store, act, active }) => {
                 const count = Math.max(0, c || 0);
-                // Misket dağılım algoritması
                 const marbles = [...Array(Math.min(count, 30))].map((_, i) => {
-                    const seed = (i * 137.5) % 360; 
-                    const dist = Math.sqrt(i) * 5; 
+                    const seed = (i * 137.5) % 360; const dist = Math.sqrt(i) * 5; 
                     const x = Math.cos(seed * Math.PI / 180) * dist;
                     const y = Math.sin(seed * Math.PI / 180) * dist;
                     const color = owner==='me' ? 'bg-amber-400' : 'bg-cyan-400';
@@ -266,33 +268,22 @@
             };
 
             return (
-                <div className="w-full h-full flex flex-col items-center justify-center">
-                    <div className="bg-slate-900/80 p-6 rounded-[2rem] border-2 border-slate-700 shadow-2xl flex gap-6 items-center backdrop-blur-md relative">
-                        {/* Hazine Sol */}
-                        <div className="flex flex-col items-center gap-2">
-                            <div className="text-[10px] bg-slate-800 px-2 rounded text-slate-400 border border-slate-700">RAKİP</div>
-                            <Pit c={playerRole==='P1'?board[13]:board[6]} owner="opponent" store={true} />
+                <div className="bg-slate-900/80 p-6 rounded-[2rem] border-2 border-slate-700 shadow-2xl flex gap-6 items-center backdrop-blur-md relative w-full h-full justify-between">
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="text-[10px] bg-slate-800 px-2 rounded text-slate-400 border border-slate-700">RAKİP</div>
+                        <Pit c={playerRole==='P1'?board[13]:board[6]} owner="opponent" store={true} />
+                    </div>
+                    <div className="flex flex-col gap-4">
+                        <div className="flex gap-2 p-2 bg-slate-950/50 rounded-xl border border-white/5">
+                            {[5,4,3,2,1,0].map(i => { const idx = playerRole==='P1' ? (12-i) : (5-i); return <Pit key={idx} c={board[idx]} owner="opponent"/> })}
                         </div>
-                        {/* Kuyular */}
-                        <div className="flex flex-col gap-4">
-                            <div className="flex gap-2 p-2 bg-slate-950/50 rounded-xl border border-white/5">
-                                {[5,4,3,2,1,0].map(i => {
-                                    const idx = playerRole==='P1' ? (12-i) : (5-i); 
-                                    return <Pit key={idx} c={board[idx]} owner="opponent"/> 
-                                })}
-                            </div>
-                            <div className={`flex gap-2 p-2 rounded-xl border transition-colors ${isMyTurn?'bg-blue-900/20 border-blue-500/30':'bg-slate-950/50 border-white/5'}`}>
-                                {[0,1,2,3,4,5].map(i => {
-                                    const idx = playerRole==='P1' ? i : (i+7); 
-                                    return <Pit key={idx} c={board[idx]} owner="me" active={isMyTurn} act={()=>isMyTurn && onMove(idx)}/> 
-                                })}
-                            </div>
+                        <div className={`flex gap-2 p-2 rounded-xl border transition-colors ${isMyTurn?'bg-blue-900/20 border-blue-500/30':'bg-slate-950/50 border-white/5'}`}>
+                            {[0,1,2,3,4,5].map(i => { const idx = playerRole==='P1' ? i : (i+7); return <Pit key={idx} c={board[idx]} owner="me" active={isMyTurn} act={()=>isMyTurn && onMove(idx)}/> })}
                         </div>
-                        {/* Hazine Sağ */}
-                        <div className="flex flex-col items-center gap-2">
-                            <div className="text-[10px] bg-amber-900/30 px-2 rounded text-amber-500 border border-amber-500/30">SEN</div>
-                            <Pit c={playerRole==='P1'?board[6]:board[13]} owner="me" store={true} />
-                        </div>
+                    </div>
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="text-[10px] bg-amber-900/30 px-2 rounded text-amber-500 border border-amber-500/30">SEN</div>
+                        <Pit c={playerRole==='P1'?board[6]:board[13]} owner="me" store={true} />
                     </div>
                 </div>
             );
@@ -312,8 +303,7 @@
                     <div className="bg-green-800 p-3 rounded-lg shadow-2xl border-[6px] border-green-900">
                         <div className="grid grid-cols-8 gap-1">
                             {board.map((cell, i) => (
-                                <div key={i} onClick={() => isMyTurn && onMove(Math.floor(i/8), i%8)} 
-                                     className="w-10 h-10 bg-green-600 hover:bg-green-500 cursor-pointer flex items-center justify-center rounded-sm">
+                                <div key={i} onClick={() => isMyTurn && onMove(Math.floor(i/8), i%8)} className="w-10 h-10 bg-green-600 hover:bg-green-500 cursor-pointer flex items-center justify-center rounded-sm">
                                     {cell !== 0 && <div className={`w-[80%] h-[80%] rounded-full shadow-lg transition-transform duration-300 hover:scale-105 ${cell===1?'bg-black border border-gray-700':'bg-white border border-gray-300'}`}></div>}
                                 </div>
                             ))}
@@ -323,7 +313,6 @@
             );
         };
 
-        // --- APP SCREENS ---
         const AuthScreen = ({ onLogin, onRegister }) => {
             const [mode, setMode] = useState("login");
             const [schools, setSchools] = useState([]); const [schoolId, setSchoolId] = useState(""); const [number, setNumber] = useState(""); const [password, setPassword] = useState(""); const [name, setName] = useState(""); const [cls, setCls] = useState("");
@@ -331,11 +320,7 @@
             const doAuth = () => {
                 if(!schoolId || !number || !password) return alert("Eksik bilgi!");
                 if(mode === "login") onLogin(schoolId, number, password);
-                else {
-                    if(!name || !cls) return alert("Ad ve Sınıf giriniz!");
-                    const selectedSchool = schools.find(s => s.id === schoolId);
-                    onRegister({ schoolId, schoolName: selectedSchool.name, number, password, name, class: cls });
-                }
+                else { if(!name || !cls) return alert("Ad ve Sınıf giriniz!"); const selectedSchool = schools.find(s => s.id === schoolId); onRegister({ schoolId, schoolName: selectedSchool.name, number, password, name, class: cls }); }
             };
             return (
                 <div className="flex h-full items-center justify-center p-4 overflow-y-auto">
@@ -348,14 +333,14 @@
                         <div className="space-y-4">
                             <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50">
                                 <label className="text-[10px] text-blue-400 font-bold block mb-1">OKUL</label>
-                                <select value={schoolId} onChange={e=>setSchoolId(e.target.value)} className="w-full bg-transparent outline-none text-sm font-bold"><option value="">Seçim Yapınız</option>{schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
+                                <select value={schoolId} onChange={e=>setSchoolId(e.target.value)} className="w-full bg-transparent outline-none text-sm font-bold text-slate-300"><option value="">Seçim Yapınız</option>{schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
                             </div>
-                            {mode==="register" && <div className="grid grid-cols-2 gap-2"><input placeholder="Ad Soyad" value={name} onChange={e=>setName(e.target.value)} className="bg-slate-900/50 p-3 rounded-lg border border-slate-700/50 outline-none text-sm" /><input placeholder="Sınıf" value={cls} onChange={e=>setCls(e.target.value)} className="bg-slate-900/50 p-3 rounded-lg border border-slate-700/50 outline-none text-sm" /></div>}
+                            {mode==="register" && <div className="grid grid-cols-2 gap-2"><input placeholder="Ad Soyad" value={name} onChange={e=>setName(e.target.value)} className="bg-slate-900/50 p-3 rounded-lg border border-slate-700/50 outline-none text-sm text-white" /><input placeholder="Sınıf" value={cls} onChange={e=>setCls(e.target.value)} className="bg-slate-900/50 p-3 rounded-lg border border-slate-700/50 outline-none text-sm text-white" /></div>}
                             <div className="grid grid-cols-2 gap-2">
-                                <input placeholder="Numara" value={number} onChange={e=>setNumber(e.target.value)} className="bg-slate-900/50 p-3 rounded-lg border border-slate-700/50 outline-none text-sm text-center" />
-                                <input type="password" placeholder="Şifre" value={password} onChange={e=>setPassword(e.target.value)} className="bg-slate-900/50 p-3 rounded-lg border border-slate-700/50 outline-none text-sm text-center" />
+                                <input placeholder="Numara" value={number} onChange={e=>setNumber(e.target.value)} className="bg-slate-900/50 p-3 rounded-lg border border-slate-700/50 outline-none text-sm text-center text-white" />
+                                <input type="password" placeholder="Şifre" value={password} onChange={e=>setPassword(e.target.value)} className="bg-slate-900/50 p-3 rounded-lg border border-slate-700/50 outline-none text-sm text-center text-white" />
                             </div>
-                            <button onClick={doAuth} className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg font-bold text-sm tracking-wide hover:brightness-110 shadow-lg shadow-blue-900/50 transition-all">{mode==="login"?"GİRİŞ YAP":"KAYDI TAMAMLA"}</button>
+                            <button onClick={doAuth} className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg font-bold text-sm tracking-wide hover:brightness-110 shadow-lg shadow-blue-900/50 transition-all text-white">{mode==="login"?"GİRİŞ YAP":"KAYDI TAMAMLA"}</button>
                             <button onClick={()=>setMode(mode==="login"?"register":"login")} className="w-full text-xs text-slate-500 hover:text-white transition"> {mode==="login"?"Hesabın yok mu? Kayıt Ol":"Giriş Ekranına Dön"} </button>
                         </div>
                     </div>
@@ -365,10 +350,12 @@
 
         const LobbyScreen = ({ user, onProfile }) => (
             <div className="h-full flex flex-col items-center justify-center text-center p-4">
-                <button onClick={onProfile} className="absolute top-4 right-4 flex items-center gap-2 bg-slate-800/50 px-3 py-1 rounded-full border border-slate-700 hover:bg-slate-700 transition"><i className="fas fa-user-astronaut text-blue-400"></i> <span className="text-xs font-bold">{user.name.split(' ')[0]}</span></button>
-                <div className="glass-panel p-10 rounded-3xl w-full max-w-md anim-pop">
+                <button onClick={onProfile} className="absolute top-4 right-4 flex items-center gap-2 bg-slate-800/50 px-3 py-1 rounded-full border border-slate-700 hover:bg-slate-700 transition z-50 cursor-pointer">
+                    <i className="fas fa-user-astronaut text-blue-400"></i> <span className="text-xs font-bold text-white">{user.name.split(' ')[0]}</span>
+                </button>
+                <div className="glass-panel p-10 rounded-3xl w-full max-w-md anim-pop relative">
                     <div className="w-24 h-24 mx-auto bg-slate-900 rounded-full flex items-center justify-center text-5xl mb-6 shadow-[0_0_20px_rgba(59,130,246,0.3)] animate-pulse border border-blue-500/30">🎮</div>
-                    <h2 className="text-2xl font-bold mb-2">Rakip Aranıyor...</h2>
+                    <h2 className="text-2xl font-bold mb-2 text-white">Rakip Aranıyor...</h2>
                     <p className="text-slate-400 text-sm mb-8">{user.schoolName}</p>
                     <div className="inline-flex items-center gap-3 px-6 py-2 bg-blue-500/10 text-blue-400 rounded-full border border-blue-500/20 text-xs font-bold"><span className="w-2 h-2 bg-blue-500 rounded-full animate-ping"></span> LOBİYE BAĞLANDI</div>
                 </div>
@@ -382,7 +369,6 @@
             
             return (
                 <div className="w-full h-full flex flex-col">
-                    {/* Header */}
                     <div className="h-14 flex items-center justify-between px-4 bg-slate-900/80 border-b border-slate-800 backdrop-blur z-20">
                         <div className="text-[10px] font-bold text-slate-500 tracking-widest border border-slate-700 px-2 py-1 rounded">ODA: {gameId}</div>
                         {gameData.winner ? 
@@ -393,10 +379,8 @@
                         }
                         <button onClick={onBack} className="text-red-500 hover:bg-red-500/10 px-3 py-1 rounded transition"><i className="fas fa-power-off"></i></button>
                     </div>
-
-                    {/* Auto-Scale Game Area */}
                     <div className="flex-1 relative bg-slate-950/50 overflow-hidden">
-                        <FitScreen targetW={900} targetH={500}>
+                        <FitScreen>
                             {gameData.type === 'reversi' ? 
                                 <ReversiBoard game={gameData} playerRole={playerRole} onMove={useReversiGame(gameData, gameId, playerRole, onWin).makeMove} /> : 
                                 <MangalaBoard game={gameData} playerRole={playerRole} onMove={useMangalaGame(gameData, gameId, playerRole, onWin).moveStone} />
@@ -408,64 +392,68 @@
         };
 
         const ProfileModal = ({ user, onClose, onLogout }) => (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur flex items-center justify-center z-50" onClick={onClose}>
+            <div className="fixed inset-0 bg-black/80 backdrop-blur flex items-center justify-center z-[100]" onClick={onClose}>
                 <div className="glass-panel w-full max-w-sm rounded-2xl overflow-hidden anim-pop" onClick={e=>e.stopPropagation()}>
                     <div className="p-6 text-center border-b border-slate-700">
-                        <div className="w-20 h-20 mx-auto bg-gradient-to-tr from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center text-3xl mb-4 shadow-lg">{user.name.charAt(0)}</div>
-                        <h2 className="text-xl font-bold">{user.name}</h2>
+                        <div className="w-20 h-20 mx-auto bg-gradient-to-tr from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center text-3xl mb-4 shadow-lg text-white font-bold">{user.name.charAt(0)}</div>
+                        <h2 className="text-xl font-bold text-white">{user.name}</h2>
                         <p className="text-slate-400 text-sm">{user.schoolName} - {user.class}</p>
                     </div>
                     <div className="p-4 grid grid-cols-2 gap-3 text-center">
                         <div className="bg-slate-900 p-3 rounded-xl border border-slate-800"><div className="text-2xl font-bold text-blue-400">{user.stats?.wins||0}</div><div className="text-[10px] text-slate-500">ZAFER</div></div>
                         <div className="bg-slate-900 p-3 rounded-xl border border-slate-800"><div className="text-2xl font-bold text-amber-400">{(user.badges||[]).length}</div><div className="text-[10px] text-slate-500">ROZET</div></div>
                     </div>
+                    <div className="p-4 bg-slate-950/50 max-h-[150px] overflow-auto">
+                        <div className="text-[10px] text-slate-500 font-bold mb-2 uppercase tracking-wider text-left">ROZETLERİM</div>
+                        <div className="grid grid-cols-1 gap-2">
+                             {Object.entries(BADGES).map(([key, data]) => { 
+                                const hasBadge = (user.badges || []).includes(key); 
+                                return (
+                                    <div key={key} className={`flex items-center gap-3 p-2 rounded-lg border ${hasBadge ? 'bg-slate-800 border-blue-500/30' : 'opacity-30 border-transparent'}`}>
+                                        <div className="text-xl">{data.icon}</div>
+                                        <div className="text-left"><div className="text-xs font-bold text-slate-200">{data.name}</div>{hasBadge && <div className="text-[9px] text-green-400">KAZANILDI</div>}</div>
+                                    </div>
+                                ); 
+                            })}
+                        </div>
+                    </div>
                     <button onClick={onLogout} className="w-full py-4 bg-red-900/20 text-red-500 font-bold text-xs hover:bg-red-900/40 transition">ÇIKIŞ YAP</button>
                 </div>
             </div>
         );
 
-        // --- MAIN APP ---
         const App = () => {
             const [user, setUser] = useState(null); const [status, setStatus] = useState("loading"); const [gameId, setGameId] = useState(null); const [role, setRole] = useState(null); const [prof, setProf] = useState(false); const [badge, setBadge] = useState(null);
             
             useEffect(() => { const uid = localStorage.getItem("az_uid"); if(uid) checkUser(uid); else setStatus("auth"); }, []);
-
             const checkUser = (uid) => window.dbGet(window.dbRef(window.db, 'users/'+uid)).then(s => { if(s.exists()){ setUser(s.val()); connect(s.val(), uid); } else window.dbGet(window.dbRef(window.db, 'pending_users/'+uid)).then(p => { if(p.exists()) setStatus("pending"); else { localStorage.removeItem("az_uid"); setStatus("auth"); }}) });
             const connect = (u, uid) => { const r = window.dbRef(window.db, 'lobby/'+uid); window.dbUpdate(r, { name:u.name, class:u.class, schoolName:u.schoolName, state:'waiting', uid }); window.dbOnDisconnect(r).remove(); setStatus("lobby"); };
             const login = (sid, no, pass) => { const uid = `${sid}_${no}`; window.dbGet(window.dbRef(window.db, 'users/'+uid)).then(s => { if(s.exists() && s.val().password === pass) { localStorage.setItem("az_uid", uid); setUser(s.val()); connect(s.val(), uid); } else alert("Hata!"); }); };
             const register = (data) => { const uid = `${data.schoolId}_${data.number}`; window.dbGet(window.dbRef(window.db, 'users/'+uid)).then(s => { if(s.exists()) alert("Kayıtlı!"); else { window.dbSet(window.dbRef(window.db, 'pending_users/'+uid), {...data, badges:[], stats:{wins:0}, joinedAt:Date.now()}); alert("Onay bekleniyor."); setStatus("auth"); } }); };
-            
             const handleWin = async (type) => { 
-                if(!user) return;
-                const uid = `${user.schoolId}_${user.number}`;
-                const ref = window.dbRef(window.db, 'users/'+uid);
-                const s = await window.dbGet(ref); let u = s.val();
-                u.stats.wins = (u.stats.wins||0)+1; 
-                let b = u.badges||[]; let won = null;
+                if(!user) return; const uid = `${user.schoolId}_${user.number}`; const ref = window.dbRef(window.db, 'users/'+uid); const s = await window.dbGet(ref); let u = s.val();
+                u.stats.wins = (u.stats.wins||0)+1; let b = u.badges||[]; let won = null;
                 if(!b.includes("first_win") && u.stats.wins>=1) { b.push("first_win"); won="first_win"; }
                 if(!b.includes("mangala_master") && type==='mangala') { b.push("mangala_master"); won="mangala_master"; }
                 u.badges = b; await window.dbUpdate(ref, u); setUser(u);
                 if(won) { setBadge(BADGES[won]); setTimeout(()=>setBadge(null), 3000); }
             };
-
             useEffect(() => { if(status!=="lobby"||!user)return; const sub = window.dbOnValue(window.dbRef(window.db, 'lobby/'+`${user.schoolId}_${user.number}`), (s)=>{ const d=s.val(); if(d&&d.gameId){ setGameId(d.gameId); setRole(d.role); setStatus("playing"); } }); return ()=>sub(); }, [status, user]);
 
             if(status==="loading") return <div className="h-full flex items-center justify-center"><i className="fas fa-circle-notch fa-spin text-4xl text-blue-500"></i></div>;
             if(status==="auth") return <AuthScreen onLogin={login} onRegister={register} />;
-            if(status==="pending") return <div className="h-full flex flex-col items-center justify-center text-center"><i className="fas fa-hourglass-half text-4xl mb-4 animate-pulse"></i><h2 className="text-xl font-bold">Onay Bekleniyor</h2><button onClick={()=>{localStorage.removeItem("az_uid"); setStatus("auth")}} className="mt-4 px-4 py-2 bg-slate-800 rounded border border-slate-700 text-xs">Geri</button></div>;
+            if(status==="pending") return <div className="h-full flex flex-col items-center justify-center text-center"><i className="fas fa-hourglass-half text-4xl mb-4 animate-pulse"></i><h2 className="text-xl font-bold">Onay Bekleniyor</h2><button onClick={()=>{localStorage.removeItem("az_uid"); setStatus("auth")}} className="mt-4 px-4 py-2 bg-slate-800 rounded border border-slate-700 text-xs text-white">Geri</button></div>;
             
             return (
                 <div className="h-full w-full">
-                    {badge && <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none"><div className="glass-panel p-8 rounded-full text-center anim-pop"><div className="text-6xl mb-2">{badge.icon}</div><div className="text-xl font-bold text-yellow-400">{badge.name}</div></div></div>}
+                    {badge && <div className="fixed inset-0 z-[200] flex items-center justify-center pointer-events-none"><div className="glass-panel p-8 rounded-full text-center anim-pop"><div className="text-6xl mb-2">{badge.icon}</div><div className="text-xl font-bold text-yellow-400">{badge.name}</div></div></div>}
                     {prof && <ProfileModal user={user} onClose={()=>setProf(false)} onLogout={()=>{if(confirm("Çıkış?")){window.dbRemove(window.dbRef(window.db, 'lobby/'+`${user.schoolId}_${user.number}`)); localStorage.removeItem("az_uid"); setStatus("auth"); setProf(false);}}} />}
                     {status==="lobby" && <LobbyScreen user={user} onProfile={()=>setProf(true)} />}
                     {status==="playing" && <GameContainer gameId={gameId} playerRole={role} onWin={handleWin} onBack={()=>{setStatus("lobby"); setGameId(null); window.dbUpdate(window.dbRef(window.db, 'lobby/'+`${user.schoolId}_${user.number}`), {state:'waiting', gameId:null}); }} />}
                 </div>
             );
         };
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        const root = ReactDOM.createRoot(document.getElementById('root')); root.render(<App />);
     </script>
 </body>
 </html>
