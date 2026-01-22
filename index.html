@@ -22,9 +22,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue, update, onDisconnect, get, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // ==========================================
-        // FIREBASE BİLGİLERİ
-        // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyByVamD_83D1gNH9wMiR0jtQErasgq7Gss",
             authDomain: "turnuva-2418e.firebaseapp.com",
@@ -34,7 +31,6 @@
             messagingSenderId: "299388405608",
             appId: "1:299388405608:web:e0985927f084bf803678dd"
         };
-        // ==========================================
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
@@ -45,18 +41,41 @@
 
     <style>
         body { 
-            background-color: #8b5cf6;
-            background-image: radial-gradient(#a78bfa 2px, transparent 2px);
-            background-size: 32px 32px;
+            background-color: #2e1065;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
             font-family: 'Fredoka', sans-serif; 
             user-select:none; 
             -webkit-tap-highlight-color: transparent;
+            color: #fff;
         }
+        
+        /* 3D Butonlar */
         .btn-3d { transition: all 0.1s; transform: translateY(0); border-bottom-width: 6px; }
         .btn-3d:active { transform: translateY(4px); border-bottom-width: 2px; }
+
+        /* Animasyonlar */
         @keyframes popUp { 0% { transform: scale(0.5); opacity: 0; } 80% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
         .animate-pop { animation: popUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-        .gem-stone { box-shadow: inset -2px -2px 6px rgba(0,0,0,0.3), inset 2px 2px 6px rgba(255,255,255,0.4); }
+        
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-5px); } 100% { transform: translateY(0px); } }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+
+        @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 15px rgba(234, 179, 8, 0.2); } 50% { box-shadow: 0 0 30px rgba(234, 179, 8, 0.8); transform: scale(1.02); } }
+        .animate-glow { animation: pulse-glow 1.5s infinite; }
+
+        /* Taş Görünümü (M&M Efekti) */
+        .candy-stone {
+            box-shadow: inset -2px -2px 4px rgba(0,0,0,0.4), inset 2px 2px 4px rgba(255,255,255,0.6), 2px 2px 4px rgba(0,0,0,0.2);
+            background-image: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4) 0%, rgba(0,0,0,0) 20%);
+        }
+
+        /* Kuyu Görünümü (İçe Çökük) */
+        .pit-shadow {
+            box-shadow: inset 0 6px 10px rgba(0,0,0,0.4), 0 2px 4px rgba(255,255,255,0.1);
+        }
     </style>
 </head>
 <body>
@@ -67,17 +86,12 @@
         const BADGES = { first_win: {icon:"⭐",name:"İlk Zafer"}, mangala_master: {icon:"🦁",name:"Mangala Kurdu"}, reversi_brain: {icon:"🧠",name:"Strateji Dehası"}, streak_fire: {icon:"🔥",name:"Yenilmez"} };
 
         // --- OYUN MOTORLARI ---
-        
-        // GÜNCELLENMİŞ MANGALA MOTORU (MEB KURALLARI)
         function useMangalaGame(gameData, gameId, playerRole, onWin) {
             const moveStone = (pitIndex) => {
                 if (gameData.winner) return;
-                
                 const isP1Turn = gameData.isP1Turn;
-                // KRİTİK DÜZELTME: Gelen veriyi kesinlikle sayıya çeviriyoruz (String hatasını önlemek için)
-                const board = gameData.board.map(n => parseInt(n, 10)); 
+                const board = gameData.board.map(n => parseInt(n, 10));
 
-                // Sıra ve Yetki Kontrolü
                 if ((playerRole === 'P1' && !isP1Turn) || (playerRole === 'P2' && isP1Turn)) return;
                 if (isP1Turn && (pitIndex < 0 || pitIndex > 5)) return;
                 if (!isP1Turn && (pitIndex < 7 || pitIndex > 12)) return;
@@ -85,97 +99,56 @@
 
                 let stones = board[pitIndex];
                 let currentIndex = pitIndex;
-                board[pitIndex] = 0; // Kuyuyu boşalt
+                board[pitIndex] = 0; 
 
-                // --- DAĞITIM MANTIĞI ---
-                // 1. Durum: Sadece 1 taş varsa (Direkt yana kaydır)
                 if (stones === 1) {
                     currentIndex = (currentIndex + 1) % 14;
                     board[currentIndex] += 1;
-                } 
-                // 2. Durum: Çok taş varsa (Kendi kuyusuna bırakarak dağıt)
-                else {
-                    board[currentIndex] = 1; // Aldığı yere 1 bırak
-                    stones--; 
-                    
+                } else {
+                    board[currentIndex] = 1; stones--; 
                     while (stones > 0) {
                         currentIndex = (currentIndex + 1) % 14;
-                        // Rakip hazineyi pas geç
                         if (isP1Turn && currentIndex === 13) continue;
                         if (!isP1Turn && currentIndex === 6) continue;
-                        
-                        board[currentIndex] += 1;
-                        stones--;
+                        board[currentIndex] += 1; stones--;
                     }
                 }
 
-                // --- KURALLAR VE SONUÇLAR ---
                 const lastIndex = currentIndex;
-                const p1Store = 6;
-                const p2Store = 13;
-                
-                // Bölge Kontrolleri
+                const p1Store = 6; const p2Store = 13;
                 const isMyStore = isP1Turn ? lastIndex === p1Store : lastIndex === p2Store;
                 const isOpponentSide = isP1Turn ? (lastIndex >= 7 && lastIndex <= 12) : (lastIndex >= 0 && lastIndex <= 5);
                 const isMySide = isP1Turn ? (lastIndex >= 0 && lastIndex <= 5) : (lastIndex >= 7 && lastIndex <= 12);
 
-                let nextTurnIsP1 = !isP1Turn; // Normalde sıra rakibe geçer
+                let nextTurnIsP1 = !isP1Turn;
 
-                // KURAL 1: Son taş hazineye gelirse sıra yine bende
-                if (isMyStore) {
-                    nextTurnIsP1 = isP1Turn; 
-                }
-                // KURAL 2: ÇİFT YAPMA (Rakip bölgedeyse ve çift ise hepsini al)
+                if (isMyStore) { nextTurnIsP1 = isP1Turn; }
                 else if (isOpponentSide && board[lastIndex] % 2 === 0) {
                     const myStoreIndex = isP1Turn ? p1Store : p2Store;
-                    // O kuyudaki TÜM taşları alıp hazineye ekle
-                    board[myStoreIndex] += board[lastIndex];
-                    board[lastIndex] = 0; // Kuyuyu sıfırla
+                    board[myStoreIndex] += board[lastIndex]; board[lastIndex] = 0;
                 }
-                // KURAL 3: TİLKİ (Kendi boş kuyuma geldiyse ve karşı doluysa)
                 else if (isMySide && board[lastIndex] === 1) { 
-                    // board[lastIndex] === 1 demek, orası boştu ve ben 1 taş koydum demektir.
                     const oppositeIndex = 12 - lastIndex;
                     if (board[oppositeIndex] > 0) {
                         const myStoreIndex = isP1Turn ? p1Store : p2Store;
-                        // Hem karşıdakini hem bendekini al
                         board[myStoreIndex] += (board[lastIndex] + board[oppositeIndex]);
-                        board[lastIndex] = 0;
-                        board[oppositeIndex] = 0;
+                        board[lastIndex] = 0; board[oppositeIndex] = 0;
                     }
                 }
 
-                // KURAL 4: OYUN SONU KONTROLÜ
                 const p1PitSum = board.slice(0, 6).reduce((a, b) => a + b, 0);
                 const p2PitSum = board.slice(7, 13).reduce((a, b) => a + b, 0);
                 let w = null;
 
                 if (p1PitSum === 0 || p2PitSum === 0) {
-                    // Oyun bitti, rakibin taşlarını da hazineye çek
-                    if (p1PitSum === 0) {
-                        board[p1Store] += p2PitSum;
-                        for(let i=7; i<=12; i++) board[i] = 0;
-                    } else {
-                        board[p2Store] += p1PitSum;
-                        for(let i=0; i<=5; i++) board[i] = 0;
-                    }
-
+                    if (p1PitSum === 0) { board[p1Store] += p2PitSum; for(let i=7; i<=12; i++) board[i] = 0; } 
+                    else { board[p2Store] += p1PitSum; for(let i=0; i<=5; i++) board[i] = 0; }
                     if (board[p1Store] > board[p2Store]) w = gameData.players.p1.name;
                     else if (board[p2Store] > board[p1Store]) w = gameData.players.p2.name;
                     else w = "Berabere";
-
-                    if(w && w !== "Berabere") { 
-                        const wRole = w === gameData.players.p1.name ? 'P1' : 'P2'; 
-                        if(wRole === playerRole) onWin('mangala'); 
-                    }
+                    if(w && w !== "Berabere") { const wRole = w === gameData.players.p1.name ? 'P1' : 'P2'; if(wRole === playerRole) onWin('mangala'); }
                 }
-
-                // Veritabanını Güncelle
-                window.dbUpdate(window.dbRef(window.db, 'games/' + gameId), { 
-                    board: board, 
-                    isP1Turn: nextTurnIsP1, 
-                    winner: w 
-                });
+                window.dbUpdate(window.dbRef(window.db, 'games/' + gameId), { board: board, isP1Turn: nextTurnIsP1, winner: w });
             };
             return { moveStone };
         }
@@ -201,16 +174,98 @@
             return { makeMove };
         }
 
-        // --- GÖRSELLER ---
+        // --- YENİLENMİŞ MANGALA TASARIMI ---
         const MangalaBoard = ({ game, playerRole, onMove }) => {
             const board = game.board;
             const isMyTurn = (playerRole === 'P1' && game.isP1Turn) || (playerRole === 'P2' && !game.isP1Turn);
-            const Pit = ({ c, owner, store, act, active }) => (
-                <div onClick={act} className={`relative flex justify-center items-center transition-all ${store ? 'w-16 h-36 sm:w-20 sm:h-44 rounded-[2rem]' : 'w-12 h-12 sm:w-16 sm:h-16 rounded-full cursor-pointer'} ${owner==='me' ? 'bg-amber-100 border-4 border-amber-300 shadow-[inset_0_4px_6px_rgba(0,0,0,0.2)]' : 'bg-indigo-100 border-4 border-indigo-300 shadow-[inset_0_4px_6px_rgba(0,0,0,0.2)]'} ${active ? 'ring-4 ring-yellow-400 scale-110 z-10' : ''}`}>
-                    <div className="flex flex-wrap gap-1 justify-center p-1 w-full h-full items-center content-center overflow-hidden">{[...Array(c>8?0:c)].map((_,i)=><div key={i} className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full gem-stone ${owner==='me'?'bg-gradient-to-br from-yellow-300 to-amber-600':'bg-gradient-to-br from-blue-300 to-indigo-600'}`}></div>)}{c>8 && <span className="font-bold text-lg text-gray-600">+{c}</span>}</div><div className="absolute -bottom-6 bg-white/90 px-2 py-0.5 rounded-lg text-xs font-bold shadow border border-gray-200">{c}</div>
+
+            const Pit = ({ c, owner, store, act, active }) => {
+                // Taş renklerini sayıya göre değiştir (Görsel zenginlik)
+                const getStoneColor = (i) => {
+                    const colors = [
+                        'from-pink-400 to-rose-600',
+                        'from-yellow-300 to-amber-500',
+                        'from-cyan-300 to-blue-500',
+                        'from-lime-300 to-green-500',
+                        'from-purple-300 to-violet-600'
+                    ];
+                    return colors[i % colors.length];
+                };
+
+                return (
+                    <div onClick={act} 
+                         className={`relative flex justify-center items-center transition-all duration-300 
+                         ${store ? 'w-20 h-40 sm:w-24 sm:h-56 rounded-[3rem]' : 'w-14 h-14 sm:w-20 sm:h-20 rounded-full cursor-pointer'} 
+                         ${owner==='me' ? 'bg-indigo-900/40 border-indigo-400/30' : 'bg-rose-900/40 border-rose-400/30'} 
+                         backdrop-blur-md border-4 pit-shadow
+                         ${active ? 'animate-glow border-yellow-300 cursor-pointer hover:scale-105' : ''}`}>
+                        
+                        {/* Taşlar */}
+                        <div className="flex flex-wrap gap-1 sm:gap-1.5 justify-center p-2 w-full h-full items-center content-center overflow-hidden">
+                            {[...Array(c>12?12:c)].map((_,i)=> (
+                                <div key={i} className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full candy-stone bg-gradient-to-br ${getStoneColor(i)}`}></div>
+                            ))}
+                            {c>12 && <span className="font-bold text-white text-xs">+{(c-12)}</span>}
+                        </div>
+
+                        {/* Sayı Balonu */}
+                        <div className={`absolute -bottom-3 sm:-bottom-4 px-2 py-0.5 rounded-full text-xs sm:text-sm font-bold shadow-lg border-2 text-white
+                            ${active ? 'bg-yellow-500 border-yellow-300 scale-110' : 'bg-slate-700 border-slate-500'}`}>
+                            {c}
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="w-full max-w-5xl mx-auto px-2">
+                    {/* Oyun Tahtası Gövdesi */}
+                    <div className="bg-gradient-to-br from-indigo-600 via-purple-700 to-fuchsia-800 p-3 sm:p-5 rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-b-8 border-purple-900 relative overflow-hidden">
+                        
+                        {/* Arka Plan Deseni */}
+                        <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]"></div>
+                        
+                        <div className="relative bg-black/20 backdrop-blur-sm p-4 sm:p-6 rounded-[2.5rem] border-2 border-white/10 flex items-center justify-between gap-2 sm:gap-4">
+                            
+                            {/* Rakip Hazine (Sol) */}
+                            <div className="flex flex-col items-center gap-3">
+                                <span className="text-white/80 text-[10px] sm:text-xs font-bold bg-rose-500/80 px-3 py-1 rounded-full shadow-lg border border-rose-400">RAKİP</span>
+                                <Pit c={playerRole==='P1'?board[13]:board[6]} owner="opponent" store={true} />
+                            </div>
+
+                            {/* Kuyular Alanı */}
+                            <div className="flex flex-col gap-4 sm:gap-6 flex-1">
+                                {/* Rakip Kuyuları (Üst) */}
+                                <div className="flex justify-between flex-row-reverse bg-rose-900/20 p-2 sm:p-3 rounded-2xl border border-rose-500/20">
+                                    {[0,1,2,3,4,5].map(i => { 
+                                        const idx = playerRole==='P1' ? (12-i) : (5-i); 
+                                        return <Pit key={idx} c={board[idx]} owner="opponent"/> 
+                                    })}
+                                </div>
+
+                                {/* Senin Kuyuların (Alt) */}
+                                <div className={`flex justify-between bg-indigo-900/20 p-2 sm:p-3 rounded-2xl border transition-all duration-500 ${isMyTurn ? 'border-yellow-400/50 shadow-[0_0_20px_rgba(234,179,8,0.2)]' : 'border-indigo-500/20'}`}>
+                                    {[0,1,2,3,4,5].map(i => { 
+                                        const idx = playerRole==='P1' ? i : (i+7); 
+                                        return <Pit key={idx} c={board[idx]} owner="me" active={isMyTurn} act={()=>isMyTurn && onMove(idx)}/> 
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Senin Hazine (Sağ) */}
+                            <div className="flex flex-col items-center gap-3">
+                                <span className="text-white/80 text-[10px] sm:text-xs font-bold bg-indigo-500/80 px-3 py-1 rounded-full shadow-lg border border-indigo-400">SEN</span>
+                                <Pit c={playerRole==='P1'?board[6]:board[13]} owner="me" store={true} />
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Bilgilendirme */}
+                    <div className="text-center mt-4 opacity-60 text-xs font-bold text-white tracking-widest">
+                        🍬 ŞEKER DİYARI MANGALA 🍬
+                    </div>
                 </div>
             );
-            return (<div className="bg-[#603c27] p-2 sm:p-4 rounded-[2rem] shadow-[0_10px_20px_rgba(0,0,0,0.5)] border-b-8 border-[#3e2415] w-full max-w-4xl mx-auto"><div className="bg-[#8B5A2B] p-4 sm:p-6 rounded-[1.5rem] border-4 border-[#724a2f] flex items-center justify-between gap-2"><div className="flex flex-col items-center gap-2"><span className="text-white/80 text-xs font-bold bg-black/20 px-2 py-1 rounded">Rakip</span><Pit c={playerRole==='P1'?board[13]:board[6]} owner="opponent" store={true} /></div><div className="flex flex-col gap-4 flex-1"><div className="flex justify-between flex-row-reverse bg-black/10 p-2 rounded-xl">{[0,1,2,3,4,5].map(i => { const idx = playerRole==='P1' ? (12-i) : (5-i); return <Pit key={idx} c={board[idx]} owner="opponent"/> })}</div><div className="flex justify-between bg-black/10 p-2 rounded-xl">{[0,1,2,3,4,5].map(i => { const idx = playerRole==='P1' ? i : (i+7); return <Pit key={idx} c={board[idx]} owner="me" active={isMyTurn} act={()=>isMyTurn && onMove(idx)}/> })}</div></div><div className="flex flex-col items-center gap-2"><span className="text-white/80 text-xs font-bold bg-black/20 px-2 py-1 rounded">Sen</span><Pit c={playerRole==='P1'?board[6]:board[13]} owner="me" store={true} /></div></div></div>);
         };
 
         const ReversiBoard = ({ game, playerRole, onMove }) => {
@@ -230,10 +285,10 @@
             const selectedSchool = schools.find(s => s.id === schoolId); onRegister({ schoolId, schoolName: selectedSchool.name, number, password, name, class: cls }); };
             return (
                 <div className="min-h-screen flex items-center justify-center p-4">
-                    <div className="bg-white p-6 sm:p-8 rounded-[2rem] shadow-[0_10px_40px_rgba(0,0,0,0.2)] w-full max-w-sm border-b-8 border-purple-200 animate-pop">
+                    <div className="bg-white/95 backdrop-blur-xl p-6 sm:p-8 rounded-[2rem] shadow-[0_10px_40px_rgba(0,0,0,0.4)] w-full max-w-sm border-b-8 border-purple-300 animate-pop">
                         <div className="text-center mb-6">
-                            <div className="w-20 h-20 bg-yellow-400 rounded-full mx-auto flex items-center justify-center text-4xl shadow-[0_4px_0_#ca8a04] mb-4 text-white"><i className="fas fa-gamepad"></i></div>
-                            <h1 className="text-3xl font-extrabold text-purple-600 tracking-tight">AKIL OYUNLARI</h1>
+                            <div className="w-20 h-20 bg-yellow-400 rounded-full mx-auto flex items-center justify-center text-4xl shadow-[0_4px_0_#ca8a04] mb-4 text-white animate-float"><i className="fas fa-gamepad"></i></div>
+                            <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 tracking-tight">AKIL OYUNLARI</h1>
                             <p className="text-gray-400 font-bold">{mode==="login"?"Hadi Başlayalım!":"Aramıza Katıl"}</p>
                         </div>
                         <div className="space-y-4">
@@ -241,7 +296,7 @@
                             {mode === "register" && (<><input placeholder="Adın Soyadın" value={name} onChange={e=>setName(e.target.value)} className="w-full bg-gray-50 border-2 border-gray-100 p-3 rounded-xl font-bold outline-none focus:border-purple-400" /><input placeholder="Sınıfın (5-A)" value={cls} onChange={e=>setCls(e.target.value)} className="w-full bg-gray-50 border-2 border-gray-100 p-3 rounded-xl font-bold outline-none focus:border-purple-400" /></>)}
                             <div className="grid grid-cols-2 gap-3"><input placeholder="Numaran" value={number} onChange={e=>setNumber(e.target.value)} className="bg-gray-50 border-2 border-gray-100 p-3 rounded-xl font-bold outline-none focus:border-purple-400 text-center" /><input type="password" placeholder="Şifren" value={password} onChange={e=>setPassword(e.target.value)} className="bg-gray-50 border-2 border-gray-100 p-3 rounded-xl font-bold outline-none focus:border-purple-400 text-center" /></div>
                             {mode === "login" ?
-                            (<button onClick={doLogin} className="w-full bg-purple-500 text-white py-4 rounded-xl font-bold text-lg btn-3d border-purple-700 shadow-lg">GİRİŞ YAP 🚀</button>) : (<button onClick={doRegister} className="w-full bg-green-500 text-white py-4 rounded-xl font-bold text-lg btn-3d border-green-700 shadow-lg">KAYDOL ✨</button>)}
+                            (<button onClick={doLogin} className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white py-4 rounded-xl font-bold text-lg btn-3d border-indigo-700 shadow-lg hover:brightness-110">GİRİŞ YAP 🚀</button>) : (<button onClick={doRegister} className="w-full bg-gradient-to-r from-green-400 to-emerald-600 text-white py-4 rounded-xl font-bold text-lg btn-3d border-emerald-700 shadow-lg hover:brightness-110">KAYDOL ✨</button>)}
                         </div>
                         <div className="text-center mt-6"><button onClick={()=>setMode(mode==="login"?"register":"login")} className="text-purple-400 font-bold hover:text-purple-600 transition">{mode==="login" ? "Hesabın yok mu? Kaydol" : "Giriş Ekranına Dön"}</button></div>
                     </div>
@@ -258,55 +313,17 @@
         const GameContainer = ({ gameId, playerRole, onBack, onWin }) => {
             const [gameData, setGameData] = useState(null);
             useEffect(() => { const gameRef = window.dbRef(window.db, 'games/' + gameId); const unsubscribe = window.dbOnValue(gameRef, (s) => setGameData(s.val())); return () => unsubscribe(); }, [gameId]);
-            if (!gameData) return <div className="min-h-screen flex items-center justify-center text-white font-bold text-xl">Oyun Yükleniyor...</div>;
+            if (!gameData) return <div className="min-h-screen flex items-center justify-center text-white font-bold text-xl"><div className="text-4xl animate-spin">🍭</div></div>;
             const gameType = gameData.type || 'mangala';
             return (
                 <div className="flex flex-col items-center justify-start pt-4 min-h-screen p-2 pb-10">
-                    <div className="w-full max-w-4xl flex justify-between items-center mb-6 px-2"><div className="bg-white/20 text-white px-3 py-1 rounded-full text-xs font-bold backdrop-blur">ODA: {gameId} | {gameType.toUpperCase()}</div><button onClick={onBack} className="bg-red-500 text-white px-4 py-2 rounded-full text-xs font-bold btn-3d border-red-700 shadow">ÇIKIŞ</button></div>
+                    <div className="w-full max-w-4xl flex justify-between items-center mb-6 px-2"><div className="bg-black/30 text-white px-4 py-2 rounded-full text-xs font-bold backdrop-blur border border-white/20">ODA: {gameId} | {gameType.toUpperCase()}</div><button onClick={onBack} className="bg-rose-500 text-white px-4 py-2 rounded-full text-xs font-bold btn-3d border-rose-700 shadow hover:brightness-110">ÇIKIŞ</button></div>
                     <div className="mb-6 text-center w-full px-4">{gameData.winner ? 
-                    (<div className="bg-white p-6 rounded-[2rem] shadow-2xl border-b-8 border-purple-200 animate-pop"><h2 className="text-3xl font-extrabold text-purple-600 mb-2">OYUN BİTTİ!</h2><p className="text-xl font-bold text-gray-700">Kazanan: <span className="text-yellow-500">{gameData.winner}</span> 🏆</p></div>) : (<div className={`inline-block px-8 py-3 rounded-full text-white font-bold text-lg shadow-lg border-b-4 transition-all duration-300 transform ${((playerRole==='P1' && gameData.isP1Turn)||(playerRole==='P2' && !gameData.isP1Turn)) ?
-                    'bg-green-500 border-green-700 scale-110' : 'bg-gray-400 border-gray-600 scale-100 opacity-80'}`}>{((playerRole==='P1' && gameData.isP1Turn)||(playerRole==='P2' && !gameData.isP1Turn)) ?
+                    (<div className="bg-white/95 backdrop-blur p-6 rounded-[2rem] shadow-2xl border-b-8 border-purple-200 animate-pop"><h2 className="text-3xl font-extrabold text-purple-600 mb-2">OYUN BİTTİ!</h2><p className="text-xl font-bold text-gray-700">Kazanan: <span className="text-yellow-500">{gameData.winner}</span> 🏆</p></div>) : (<div className={`inline-block px-8 py-3 rounded-full text-white font-bold text-lg shadow-lg border-b-4 transition-all duration-300 transform ${((playerRole==='P1' && gameData.isP1Turn)||(playerRole==='P2' && !gameData.isP1Turn)) ?
+                    'bg-gradient-to-r from-green-400 to-emerald-600 border-emerald-700 scale-110' : 'bg-slate-700 border-slate-900 scale-95 opacity-80 grayscale'}`}>{((playerRole==='P1' && gameData.isP1Turn)||(playerRole==='P2' && !gameData.isP1Turn)) ?
                     "SIRA SENDE! 👊" : "RAKİP DÜŞÜNÜYOR... 🤔"}</div>)}</div>
                     {gameType === 'reversi' ?
                     <ReversiBoard game={gameData} playerRole={playerRole} onMove={useReversiGame(gameData, gameId, playerRole, onWin).makeMove} /> : <MangalaBoard game={gameData} playerRole={playerRole} onMove={useMangalaGame(gameData, gameId, playerRole, onWin).moveStone} />}
-                </div>
-            );
-        };
-
-        const App = () => {
-            const [user, setUser] = useState(null);
-            const [status, setStatus] = useState("loading"); const [activeGameId, setActiveGameId] = useState(null); const [playerRole, setPlayerRole] = useState(null); const [showProfile, setShowProfile] = useState(false);
-            const [newBadge, setNewBadge] = useState(null);
-            useEffect(() => { const savedUID = localStorage.getItem("az_uid"); if (savedUID) checkUserStatus(savedUID); else setStatus("auth"); }, []);
-            const checkUserStatus = (uid) => { window.dbGet(window.dbRef(window.db, 'users/' + uid)).then(snap => { if (snap.exists()) { setUser(snap.val()); connectToLobby(snap.val(), uid); } else { window.dbGet(window.dbRef(window.db, 'pending_users/' + uid)).then(pSnap => { if (pSnap.exists()) setStatus("pending"); else { localStorage.removeItem("az_uid"); setStatus("auth"); } }); } }); };
-            const connectToLobby = (userData, uid) => { const lobbyRef = window.dbRef(window.db, 'lobby/' + uid);
-            window.dbUpdate(lobbyRef, { name: userData.name, class: userData.class, schoolName: userData.schoolName, state: 'waiting', uid: uid }); window.dbOnDisconnect(lobbyRef).remove(); setStatus("lobby"); };
-            const handleLogin = (schoolId, number, password) => { const uid = `${schoolId}_${number}`;
-            window.dbGet(window.dbRef(window.db, 'users/' + uid)).then(snap => { if (snap.exists()) { const data = snap.val(); if (data.password === password) { localStorage.setItem("az_uid", uid); setUser(data); connectToLobby(data, uid); } else alert("Şifre hatalı!"); } else { window.dbGet(window.dbRef(window.db, 'pending_users/' + uid)).then(pSnap => { if(pSnap.exists()) alert("Hesabınız onay bekliyor."); else alert("Böyle bir kayıt bulunamadı."); }); } }); };
-            const handleRegister = (formData) => { const uid = `${formData.schoolId}_${formData.number}`;
-            window.dbGet(window.dbRef(window.db, 'users/' + uid)).then(snap => { if(snap.exists()) return alert("Bu numara zaten kayıtlı!"); window.dbGet(window.dbRef(window.db, 'pending_users/' + uid)).then(pSnap => { if(pSnap.exists()) return alert("Zaten onay bekliyor!"); const newUser = { ...formData, badges: [], stats: {wins:0, games:0}, joinedAt: Date.now() }; window.dbSet(window.dbRef(window.db, 'pending_users/' + uid), newUser); alert("Kayıt alındı! Öğretmen onaylayınca girebilirsin."); setStatus("auth"); }); }); };
-            const handleLogout = () => { if(confirm("Çıkış yapmak istediğine emin misin?")) { const uid = `${user.schoolId}_${user.number}`;
-            window.dbRemove(window.dbRef(window.db, 'lobby/' + uid)); localStorage.removeItem("az_uid"); setUser(null); setStatus("auth"); setShowProfile(false); } };
-            const handleWin = async (gameType) => { if(!user) return;
-            const uid = `${user.schoolId}_${user.number}`; const userRef = window.dbRef(window.db, 'users/' + uid); const snap = await window.dbGet(userRef); let userData = snap.val();
-            userData.stats.wins = (userData.stats.wins || 0) + 1; let badges = userData.badges || []; let won = null;
-            if (!badges.includes("first_win") && userData.stats.wins >= 1) { badges.push("first_win"); won = "first_win"; } if (!badges.includes("streak_fire") && userData.stats.wins >= 3) { badges.push("streak_fire");
-            won = "streak_fire"; } if (!badges.includes("mangala_master") && gameType === 'mangala') { badges.push("mangala_master"); won = "mangala_master";
-            } if (!badges.includes("reversi_brain") && gameType === 'reversi') { badges.push("reversi_brain"); won = "reversi_brain"; } userData.badges = badges; await window.dbUpdate(userRef, userData); setUser(userData);
-            if(won) { setNewBadge(BADGES[won]); setTimeout(() => setNewBadge(null), 4000); } };
-            useEffect(() => { if (status !== "lobby" || !user) return; const uid = `${user.schoolId}_${user.number}`; const myRef = window.dbRef(window.db, 'lobby/' + uid); const unsubscribe = window.dbOnValue(myRef, (snapshot) => { const data = snapshot.val(); if (data && data.gameId) { setActiveGameId(data.gameId); setPlayerRole(data.role); setStatus("playing"); } }); return () => unsubscribe(); }, [status, user]);
-            if(status === "loading") return <div className="min-h-screen flex items-center justify-center text-white font-bold text-xl">Yükleniyor...</div>;
-            if(status === "auth") return <AuthScreen onLogin={handleLogin} onRegister={handleRegister} />;
-            if(status === "pending") return <PendingScreen onBack={()=>{localStorage.removeItem("az_uid"); setStatus("auth")}} />;
-            return (
-                <div className="font-sans text-stone-800">
-                    {newBadge && (<div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"><div className="bg-white p-8 rounded-[2rem] shadow-2xl text-center border-b-8 border-yellow-300 animate-pop pointer-events-auto relative overflow-hidden max-w-xs w-full"><div className="absolute inset-0 bg-yellow-400 opacity-10 animate-pulse"></div><div className="text-7xl mb-4 animate-bounce">{newBadge.icon}</div><h2 className="text-2xl font-extrabold text-yellow-500 mb-2">HARİKA!</h2><p className="font-bold text-gray-700 text-lg">{newBadge.name}</p></div></div>)}
-                
-                    {showProfile && user && <ProfileModal user={user} onClose={()=>setShowProfile(false)} onLogout={handleLogout} />}
-                    {status === "lobby" && <LobbyScreen user={user} onProfile={()=>setShowProfile(true)} />}
-                    {status === "playing" && (<GameContainer gameId={activeGameId} playerRole={playerRole} onWin={handleWin} onBack={() => { setStatus("lobby");
-                    setActiveGameId(null); const uid = `${user.schoolId}_${user.number}`; window.dbUpdate(window.dbRef(window.db, 'lobby/' + uid), { state: 'waiting', gameId: null, role: null });
-                    }} />)}
                 </div>
             );
         };
