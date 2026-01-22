@@ -6,7 +6,7 @@
     <title>Akıl Zeka Oyunları</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#8b5cf6">
+    <meta name="theme-color" content="#2e1065">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063822.png">
 
@@ -34,8 +34,15 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        
+        // React tarafına aktar
         window.db = db;
-        window.dbRef = ref; window.dbSet = set; window.dbOnValue = onValue; window.dbUpdate = update; window.dbOnDisconnect = onDisconnect; window.dbGet = get;
+        window.dbRef = ref; 
+        window.dbSet = set; 
+        window.dbOnValue = onValue; 
+        window.dbUpdate = update; 
+        window.dbOnDisconnect = onDisconnect; 
+        window.dbGet = get;
         window.dbRemove = remove;
     </script>
 
@@ -50,13 +57,13 @@
             user-select:none; 
             -webkit-tap-highlight-color: transparent;
             color: #fff;
+            margin: 0;
+            overflow-x: hidden;
         }
         
-        /* 3D Butonlar */
         .btn-3d { transition: all 0.1s; transform: translateY(0); border-bottom-width: 6px; }
         .btn-3d:active { transform: translateY(4px); border-bottom-width: 2px; }
 
-        /* Animasyonlar */
         @keyframes popUp { 0% { transform: scale(0.5); opacity: 0; } 80% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
         .animate-pop { animation: popUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         
@@ -66,13 +73,11 @@
         @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 15px rgba(234, 179, 8, 0.2); } 50% { box-shadow: 0 0 30px rgba(234, 179, 8, 0.8); transform: scale(1.02); } }
         .animate-glow { animation: pulse-glow 1.5s infinite; }
 
-        /* Taş Görünümü (M&M Efekti) */
         .candy-stone {
             box-shadow: inset -2px -2px 4px rgba(0,0,0,0.4), inset 2px 2px 4px rgba(255,255,255,0.6), 2px 2px 4px rgba(0,0,0,0.2);
             background-image: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4) 0%, rgba(0,0,0,0) 20%);
         }
 
-        /* Kuyu Görünümü (İçe Çökük) */
         .pit-shadow {
             box-shadow: inset 0 6px 10px rgba(0,0,0,0.4), 0 2px 4px rgba(255,255,255,0.1);
         }
@@ -90,7 +95,9 @@
             const moveStone = (pitIndex) => {
                 if (gameData.winner) return;
                 const isP1Turn = gameData.isP1Turn;
-                const board = gameData.board.map(n => parseInt(n, 10));
+                
+                // GÜVENLİK: Veriyi sayıya çevir
+                const board = (gameData.board || []).map(n => parseInt(n, 10) || 0);
 
                 if ((playerRole === 'P1' && !isP1Turn) || (playerRole === 'P2' && isP1Turn)) return;
                 if (isP1Turn && (pitIndex < 0 || pitIndex > 5)) return;
@@ -174,23 +181,19 @@
             return { makeMove };
         }
 
-        // --- YENİLENMİŞ MANGALA TASARIMI ---
+        // --- GÖRSEL BİLEŞENLER ---
         const MangalaBoard = ({ game, playerRole, onMove }) => {
-            const board = game.board;
+            const board = (game.board || []).map(n => parseInt(n, 10) || 0);
             const isMyTurn = (playerRole === 'P1' && game.isP1Turn) || (playerRole === 'P2' && !game.isP1Turn);
 
             const Pit = ({ c, owner, store, act, active }) => {
-                // Taş renklerini sayıya göre değiştir (Görsel zenginlik)
                 const getStoneColor = (i) => {
-                    const colors = [
-                        'from-pink-400 to-rose-600',
-                        'from-yellow-300 to-amber-500',
-                        'from-cyan-300 to-blue-500',
-                        'from-lime-300 to-green-500',
-                        'from-purple-300 to-violet-600'
-                    ];
+                    const colors = ['from-pink-400 to-rose-600','from-yellow-300 to-amber-500','from-cyan-300 to-blue-500','from-lime-300 to-green-500','from-purple-300 to-violet-600'];
                     return colors[i % colors.length];
                 };
+
+                const stoneCount = Math.max(0, c || 0);
+                const displayStones = stoneCount > 12 ? 12 : stoneCount;
 
                 return (
                     <div onClick={act} 
@@ -200,18 +203,16 @@
                          backdrop-blur-md border-4 pit-shadow
                          ${active ? 'animate-glow border-yellow-300 cursor-pointer hover:scale-105' : ''}`}>
                         
-                        {/* Taşlar */}
                         <div className="flex flex-wrap gap-1 sm:gap-1.5 justify-center p-2 w-full h-full items-center content-center overflow-hidden">
-                            {[...Array(c>12?12:c)].map((_,i)=> (
+                            {[...Array(displayStones)].map((_,i)=> (
                                 <div key={i} className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full candy-stone bg-gradient-to-br ${getStoneColor(i)}`}></div>
                             ))}
-                            {c>12 && <span className="font-bold text-white text-xs">+{(c-12)}</span>}
+                            {stoneCount > 12 && <span className="font-bold text-white text-xs">+{(stoneCount-12)}</span>}
                         </div>
 
-                        {/* Sayı Balonu */}
                         <div className={`absolute -bottom-3 sm:-bottom-4 px-2 py-0.5 rounded-full text-xs sm:text-sm font-bold shadow-lg border-2 text-white
                             ${active ? 'bg-yellow-500 border-yellow-300 scale-110' : 'bg-slate-700 border-slate-500'}`}>
-                            {c}
+                            {stoneCount}
                         </div>
                     </div>
                 );
@@ -219,31 +220,20 @@
 
             return (
                 <div className="w-full max-w-5xl mx-auto px-2">
-                    {/* Oyun Tahtası Gövdesi */}
                     <div className="bg-gradient-to-br from-indigo-600 via-purple-700 to-fuchsia-800 p-3 sm:p-5 rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-b-8 border-purple-900 relative overflow-hidden">
-                        
-                        {/* Arka Plan Deseni */}
                         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]"></div>
-                        
                         <div className="relative bg-black/20 backdrop-blur-sm p-4 sm:p-6 rounded-[2.5rem] border-2 border-white/10 flex items-center justify-between gap-2 sm:gap-4">
-                            
-                            {/* Rakip Hazine (Sol) */}
                             <div className="flex flex-col items-center gap-3">
                                 <span className="text-white/80 text-[10px] sm:text-xs font-bold bg-rose-500/80 px-3 py-1 rounded-full shadow-lg border border-rose-400">RAKİP</span>
                                 <Pit c={playerRole==='P1'?board[13]:board[6]} owner="opponent" store={true} />
                             </div>
-
-                            {/* Kuyular Alanı */}
                             <div className="flex flex-col gap-4 sm:gap-6 flex-1">
-                                {/* Rakip Kuyuları (Üst) */}
                                 <div className="flex justify-between flex-row-reverse bg-rose-900/20 p-2 sm:p-3 rounded-2xl border border-rose-500/20">
                                     {[0,1,2,3,4,5].map(i => { 
                                         const idx = playerRole==='P1' ? (12-i) : (5-i); 
                                         return <Pit key={idx} c={board[idx]} owner="opponent"/> 
                                     })}
                                 </div>
-
-                                {/* Senin Kuyuların (Alt) */}
                                 <div className={`flex justify-between bg-indigo-900/20 p-2 sm:p-3 rounded-2xl border transition-all duration-500 ${isMyTurn ? 'border-yellow-400/50 shadow-[0_0_20px_rgba(234,179,8,0.2)]' : 'border-indigo-500/20'}`}>
                                     {[0,1,2,3,4,5].map(i => { 
                                         const idx = playerRole==='P1' ? i : (i+7); 
@@ -251,25 +241,19 @@
                                     })}
                                 </div>
                             </div>
-
-                            {/* Senin Hazine (Sağ) */}
                             <div className="flex flex-col items-center gap-3">
                                 <span className="text-white/80 text-[10px] sm:text-xs font-bold bg-indigo-500/80 px-3 py-1 rounded-full shadow-lg border border-indigo-400">SEN</span>
                                 <Pit c={playerRole==='P1'?board[6]:board[13]} owner="me" store={true} />
                             </div>
                         </div>
                     </div>
-                    
-                    {/* Bilgilendirme */}
-                    <div className="text-center mt-4 opacity-60 text-xs font-bold text-white tracking-widest">
-                        🍬 ŞEKER DİYARI MANGALA 🍬
-                    </div>
+                    <div className="text-center mt-4 opacity-60 text-xs font-bold text-white tracking-widest">🍬 ŞEKER DİYARI MANGALA 🍬</div>
                 </div>
             );
         };
 
         const ReversiBoard = ({ game, playerRole, onMove }) => {
-            const board = game.board;
+            const board = (game.board || []).map(n => parseInt(n, 10) || 0);
             const isMyTurn = (playerRole === 'P1' && game.isP1Turn) || (playerRole === 'P2' && !game.isP1Turn); const black = board.filter(x=>x===1).length;
             const white = board.filter(x=>x===2).length;
             return (<div className="flex flex-col items-center gap-4 w-full max-w-md"><div className="flex gap-4 w-full"><div className="flex-1 bg-gray-900 text-white p-3 rounded-2xl flex items-center justify-between border-b-4 border-gray-700 shadow"><div className="w-8 h-8 bg-black rounded-full border-2 border-gray-600 gem-stone"></div> <span className="text-2xl font-bold">{black}</span></div><div className="flex-1 bg-white text-gray-900 p-3 rounded-2xl flex items-center justify-between border-b-4 border-gray-300 shadow"><div className="w-8 h-8 bg-white rounded-full border-2 border-gray-300 gem-stone"></div> <span className="text-2xl font-bold">{white}</span></div></div><div className="bg-green-700 p-3 rounded-xl shadow-[0_10px_0_#14532d] border-4 border-green-800 w-full aspect-square"><div className="grid grid-cols-8 gap-1 h-full w-full">{board.map((cell, i) => (<div key={i} onClick={() => isMyTurn && onMove(Math.floor(i/8), i%8)} className="bg-green-500 rounded flex items-center justify-center cursor-pointer hover:bg-green-400 relative shadow-inner">{cell !== 0 && (<div className={`w-[80%] h-[80%] rounded-full shadow-lg transition-transform duration-300 hover:scale-105 gem-stone ${cell===1 ? 'bg-gray-900 border-2 border-gray-700' : 'bg-white border-2 border-gray-200'}`}></div>)}</div>))}</div></div></div>);
@@ -279,10 +263,17 @@
             const [mode, setMode] = useState("login");
             const [schools, setSchools] = useState([]); const [schoolId, setSchoolId] = useState(""); const [number, setNumber] = useState(""); const [password, setPassword] = useState("");
             const [name, setName] = useState(""); const [cls, setCls] = useState("");
-            useEffect(() => { window.dbOnValue(window.dbRef(window.db, 'schools'), (snap) => { const val = snap.val(); if(val) setSchools(Object.values(val)); }); }, []);
+            
+            useEffect(() => { 
+                if(window.dbRef && window.dbOnValue) {
+                    window.dbOnValue(window.dbRef(window.db, 'schools'), (snap) => { const val = snap.val(); if(val) setSchools(Object.values(val)); }); 
+                }
+            }, []);
+
             const doLogin = () => { if(!schoolId || !number || !password) return alert("Eksik bilgi!"); onLogin(schoolId, number, password); };
             const doRegister = () => { if(!schoolId || !number || !password || !name || !cls) return alert("Tüm alanları doldur!");
             const selectedSchool = schools.find(s => s.id === schoolId); onRegister({ schoolId, schoolName: selectedSchool.name, number, password, name, class: cls }); };
+            
             return (
                 <div className="min-h-screen flex items-center justify-center p-4">
                     <div className="bg-white/95 backdrop-blur-xl p-6 sm:p-8 rounded-[2rem] shadow-[0_10px_40px_rgba(0,0,0,0.4)] w-full max-w-sm border-b-8 border-purple-300 animate-pop">
@@ -324,6 +315,51 @@
                     "SIRA SENDE! 👊" : "RAKİP DÜŞÜNÜYOR... 🤔"}</div>)}</div>
                     {gameType === 'reversi' ?
                     <ReversiBoard game={gameData} playerRole={playerRole} onMove={useReversiGame(gameData, gameId, playerRole, onWin).makeMove} /> : <MangalaBoard game={gameData} playerRole={playerRole} onMove={useMangalaGame(gameData, gameId, playerRole, onWin).moveStone} />}
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [status, setStatus] = useState("loading"); const [activeGameId, setActiveGameId] = useState(null); const [playerRole, setPlayerRole] = useState(null); const [showProfile, setShowProfile] = useState(false);
+            const [newBadge, setNewBadge] = useState(null);
+            
+            useEffect(() => { 
+                const savedUID = localStorage.getItem("az_uid"); 
+                if (savedUID) checkUserStatus(savedUID); 
+                else setStatus("auth"); 
+            }, []);
+
+            const checkUserStatus = (uid) => { window.dbGet(window.dbRef(window.db, 'users/' + uid)).then(snap => { if (snap.exists()) { setUser(snap.val()); connectToLobby(snap.val(), uid); } else { window.dbGet(window.dbRef(window.db, 'pending_users/' + uid)).then(pSnap => { if (pSnap.exists()) setStatus("pending"); else { localStorage.removeItem("az_uid"); setStatus("auth"); } }); } }); };
+            const connectToLobby = (userData, uid) => { const lobbyRef = window.dbRef(window.db, 'lobby/' + uid);
+            window.dbUpdate(lobbyRef, { name: userData.name, class: userData.class, schoolName: userData.schoolName, state: 'waiting', uid: uid }); window.dbOnDisconnect(lobbyRef).remove(); setStatus("lobby"); };
+            const handleLogin = (schoolId, number, password) => { const uid = `${schoolId}_${number}`;
+            window.dbGet(window.dbRef(window.db, 'users/' + uid)).then(snap => { if (snap.exists()) { const data = snap.val(); if (data.password === password) { localStorage.setItem("az_uid", uid); setUser(data); connectToLobby(data, uid); } else alert("Şifre hatalı!"); } else { window.dbGet(window.dbRef(window.db, 'pending_users/' + uid)).then(pSnap => { if(pSnap.exists()) alert("Hesabınız onay bekliyor."); else alert("Böyle bir kayıt bulunamadı."); }); } }); };
+            const handleRegister = (formData) => { const uid = `${formData.schoolId}_${formData.number}`;
+            window.dbGet(window.dbRef(window.db, 'users/' + uid)).then(snap => { if(snap.exists()) return alert("Bu numara zaten kayıtlı!"); window.dbGet(window.dbRef(window.db, 'pending_users/' + uid)).then(pSnap => { if(pSnap.exists()) return alert("Zaten onay bekliyor!"); const newUser = { ...formData, badges: [], stats: {wins:0, games:0}, joinedAt: Date.now() }; window.dbSet(window.dbRef(window.db, 'pending_users/' + uid), newUser); alert("Kayıt alındı! Öğretmen onaylayınca girebilirsin."); setStatus("auth"); }); }); };
+            const handleLogout = () => { if(confirm("Çıkış yapmak istediğine emin misin?")) { const uid = `${user.schoolId}_${user.number}`;
+            window.dbRemove(window.dbRef(window.db, 'lobby/' + uid)); localStorage.removeItem("az_uid"); setUser(null); setStatus("auth"); setShowProfile(false); } };
+            const handleWin = async (gameType) => { if(!user) return;
+            const uid = `${user.schoolId}_${user.number}`; const userRef = window.dbRef(window.db, 'users/' + uid); const snap = await window.dbGet(userRef); let userData = snap.val();
+            userData.stats.wins = (userData.stats.wins || 0) + 1; let badges = userData.badges || []; let won = null;
+            if (!badges.includes("first_win") && userData.stats.wins >= 1) { badges.push("first_win"); won = "first_win"; } if (!badges.includes("streak_fire") && userData.stats.wins >= 3) { badges.push("streak_fire");
+            won = "streak_fire"; } if (!badges.includes("mangala_master") && gameType === 'mangala') { badges.push("mangala_master"); won = "mangala_master";
+            } if (!badges.includes("reversi_brain") && gameType === 'reversi') { badges.push("reversi_brain"); won = "reversi_brain"; } userData.badges = badges; await window.dbUpdate(userRef, userData); setUser(userData);
+            if(won) { setNewBadge(BADGES[won]); setTimeout(() => setNewBadge(null), 4000); } };
+            useEffect(() => { if (status !== "lobby" || !user) return; const uid = `${user.schoolId}_${user.number}`; const myRef = window.dbRef(window.db, 'lobby/' + uid); const unsubscribe = window.dbOnValue(myRef, (snapshot) => { const data = snapshot.val(); if (data && data.gameId) { setActiveGameId(data.gameId); setPlayerRole(data.role); setStatus("playing"); } }); return () => unsubscribe(); }, [status, user]);
+            
+            if(status === "loading") return <div className="min-h-screen flex items-center justify-center text-white font-bold text-xl"><div className="text-4xl animate-spin">🍭</div></div>;
+            if(status === "auth") return <AuthScreen onLogin={handleLogin} onRegister={handleRegister} />;
+            if(status === "pending") return <PendingScreen onBack={()=>{localStorage.removeItem("az_uid"); setStatus("auth")}} />;
+            return (
+                <div className="font-sans text-stone-800">
+                    {newBadge && (<div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"><div className="bg-white p-8 rounded-[2rem] shadow-2xl text-center border-b-8 border-yellow-300 animate-pop pointer-events-auto relative overflow-hidden max-w-xs w-full"><div className="absolute inset-0 bg-yellow-400 opacity-10 animate-pulse"></div><div className="text-7xl mb-4 animate-bounce">{newBadge.icon}</div><h2 className="text-2xl font-extrabold text-yellow-500 mb-2">HARİKA!</h2><p className="font-bold text-gray-700 text-lg">{newBadge.name}</p></div></div>)}
+                
+                    {showProfile && user && <ProfileModal user={user} onClose={()=>setShowProfile(false)} onLogout={handleLogout} />}
+                    {status === "lobby" && <LobbyScreen user={user} onProfile={()=>setShowProfile(true)} />}
+                    {status === "playing" && (<GameContainer gameId={activeGameId} playerRole={playerRole} onWin={handleWin} onBack={() => { setStatus("lobby");
+                    setActiveGameId(null); const uid = `${user.schoolId}_${user.number}`; window.dbUpdate(window.dbRef(window.db, 'lobby/' + uid), { state: 'waiting', gameId: null, role: null });
+                    }} />)}
                 </div>
             );
         };
