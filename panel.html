@@ -725,9 +725,20 @@
 
                         {/* Winner Banner */}
                         {game.winner && (
-                            <div className="bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 p-4 text-center">
-                                <span className="text-2xl mr-2">🏆</span>
-                                <span className="text-white font-bold text-xl">Kazanan: {game.winner}</span>
+                            <div className={`p-4 text-center ${game.endReason === 'quit' ? 'bg-gradient-to-r from-red-500 via-red-600 to-red-500' : 'bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500'}`}>
+                                {game.endReason === 'quit' ? (
+                                    <>
+                                        <span className="text-white/80 text-sm mr-2">🚨</span>
+                                        <span className="text-white font-bold">{game.quitter} oyundan ayrıldı - </span>
+                                        <span className="text-2xl mr-2">🏆</span>
+                                        <span className="text-white font-bold text-xl">Kazanan: {game.winner}</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="text-2xl mr-2">🏆</span>
+                                        <span className="text-white font-bold text-xl">Kazanan: {game.winner}</span>
+                                    </>
+                                )}
                             </div>
                         )}
                     </div>
@@ -1437,6 +1448,8 @@
                                                             <div className="live-dot" style={{width:'8px',height:'8px'}}></div>
                                                             Canlı
                                                         </span>
+                                                    ) : g.endReason === 'quit' ? (
+                                                        <span className="badge badge-red">🚨 Terk Edildi</span>
                                                     ) : (
                                                         <span className="badge badge-orange">🏆 Bitti</span>
                                                     )}
@@ -1470,8 +1483,15 @@
 
                                                 {/* Winner */}
                                                 {g.winner && (
-                                                    <div className="bg-gradient-to-r from-yellow-400 to-amber-500 text-white text-center py-2 rounded-xl font-bold mb-3">
-                                                        🏆 {g.winner}
+                                                    <div className={`text-white text-center py-2 rounded-xl font-bold mb-3 ${g.endReason === 'quit' ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-yellow-400 to-amber-500'}`}>
+                                                        {g.endReason === 'quit' ? (
+                                                            <>
+                                                                <span className="text-sm opacity-80 block">{g.quitter} terk etti</span>
+                                                                🏆 Kazanan: {g.winner}
+                                                            </>
+                                                        ) : (
+                                                            <>🏆 {g.winner}</>
+                                                        )}
                                                     </div>
                                                 )}
 
