@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Akıl Zeka Oyunları - Pro Arena</title>
+    <title>🎮 Akıl Zeka Oyunları - Eğlenceli Dünya</title>
     
     <link rel="manifest" href="manifest.json">
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
     
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
@@ -36,89 +36,433 @@
     </script>
 
     <style>
-        /* --- CORE RESET & LAYOUT --- */
+        * { box-sizing: border-box; }
+        
         html, body {
             width: 100%; height: 100%; margin: 0; padding: 0;
             overflow: hidden; 
-            background-color: #020617; 
-            color: white;
-            font-family: 'Rajdhani', sans-serif;
-            touch-action: none; /* Mobilde kaydırmayı engeller */
+            font-family: 'Fredoka', 'Baloo 2', sans-serif;
+            touch-action: none;
             -webkit-user-select: none; user-select: none;
         }
 
-        /* --- BACKGROUND & FX --- */
-        .app-bg {
+        /* 🌈 MAGICAL ANIMATED BACKGROUND */
+        .magic-bg {
             position: fixed; inset: 0; z-index: -1;
-            background: radial-gradient(circle at 50% 0%, #172554 0%, #020617 80%);
-        }
-        .grid-overlay {
-            position: absolute; inset: 0;
-            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 30px 30px;
-            opacity: 0.5;
-        }
-
-        /* --- GLASS PANELS --- */
-        .glass-box {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
         }
         
-        /* --- GAME ELEMENTS --- */
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        /* ✨ FLOATING PARTICLES */
+        .particles {
+            position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0;
+        }
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            animation: float 20s infinite ease-in-out;
+            opacity: 0.6;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+        }
+
+        /* 🌟 STARS */
+        .stars {
+            position: fixed; inset: 0; pointer-events: none; z-index: 0;
+        }
+        .star {
+            position: absolute;
+            width: 4px; height: 4px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 2s infinite ease-in-out;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.5); }
+        }
+
+        /* 🎨 GLASS MORPHISM CARDS */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), 
+                        inset 0 0 32px rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-card-dark {
+            background: rgba(30, 30, 60, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 🎯 FUN BUTTONS */
+        .btn-fun {
+            position: relative;
+            padding: 16px 32px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            border: none;
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 6px 0 rgba(0,0,0,0.2), 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .btn-fun:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 0 rgba(0,0,0,0.2), 0 15px 30px rgba(0,0,0,0.3);
+        }
+        .btn-fun:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.2), 0 5px 10px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        .btn-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        /* 🎮 GAME PIT STYLES */
         .pit {
             position: relative;
-            background: rgba(2, 6, 23, 0.5);
-            box-shadow: inset 0 2px 5px rgba(0,0,0,0.8), 0 1px 0 rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.05);
-            transition: all 0.2s;
+            background: linear-gradient(145deg, rgba(0,0,0,0.3), rgba(0,0,0,0.5));
+            border-radius: 50%;
+            box-shadow: inset 0 4px 15px rgba(0,0,0,0.6), 
+                        0 2px 5px rgba(255,255,255,0.1);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
         }
-        .pit:active { transform: scale(0.95); background: rgba(2, 6, 23, 0.8); }
+        .pit:hover {
+            transform: scale(1.05);
+            box-shadow: inset 0 4px 15px rgba(0,0,0,0.6), 
+                        0 0 20px rgba(255,255,255,0.3);
+        }
+        .pit:active {
+            transform: scale(0.95);
+        }
         .pit-active {
-            border-color: #3b82f6;
-            box-shadow: inset 0 0 15px rgba(59, 130, 246, 0.2), 0 0 10px rgba(59, 130, 246, 0.4);
+            animation: pulseGlow 1.5s infinite;
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: inset 0 4px 15px rgba(0,0,0,0.6), 0 0 10px rgba(46, 213, 115, 0.5); }
+            50% { box-shadow: inset 0 4px 15px rgba(0,0,0,0.6), 0 0 30px rgba(46, 213, 115, 0.8); }
         }
 
+        /* 🔮 MARBLE STONES */
         .marble {
-            position: absolute; border-radius: 50%;
-            box-shadow: inset -1px -1px 2px rgba(0,0,0,0.8), inset 1px 1px 2px rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.5);
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #fff 0%, #ffd700 40%, #ff8c00 100%);
+            box-shadow: inset -2px -2px 6px rgba(0,0,0,0.4), 
+                        inset 2px 2px 6px rgba(255,255,255,0.8),
+                        0 3px 6px rgba(0,0,0,0.4);
+            animation: marbleBounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .marble-opponent {
+            background: radial-gradient(circle at 30% 30%, #fff 0%, #00d4ff 40%, #0099cc 100%);
+        }
+        @keyframes marbleBounce {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
         }
 
-        /* --- RESPONSIVE HELPERS --- */
-        /* PC Mode (Default Large) */
-        .game-wrapper {
-            width: 100%; height: 100%;
-            display: flex; flex-direction: column;
-        }
+        /* 📱 RESPONSIVE */
         @media (min-width: 1024px) {
             .pc-container {
                 max-width: 1100px;
-                height: 85vh;
+                height: 90vh;
                 margin: auto;
-                border-radius: 24px;
+                border-radius: 32px;
                 overflow: hidden;
-                border: 1px solid rgba(255,255,255,0.1);
-                box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
             }
         }
 
-        /* Animations */
-        @keyframes pop { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-        .anim-pop { animation: pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        /* 🎉 CONFETTI */
+        @keyframes confettiFall {
+            0% { transform: translateY(-100%) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        .confetti {
+            position: fixed;
+            width: 10px; height: 10px;
+            animation: confettiFall 3s linear forwards;
+        }
+
+        /* 🌈 RAINBOW TEXT */
+        .rainbow-text {
+            background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #54a0ff);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: rainbowMove 3s linear infinite;
+        }
+        @keyframes rainbowMove {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        /* ⭐ BOUNCE ANIMATION */
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .bounce { animation: bounce 2s ease-in-out infinite; }
+
+        /* 🎪 POP IN */
+        @keyframes popIn {
+            0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+            50% { transform: scale(1.1) rotate(5deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .pop-in { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        /* 🌊 WAVE */
+        @keyframes wave {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(20deg); }
+            75% { transform: rotate(-20deg); }
+        }
+        .wave { animation: wave 1s ease-in-out infinite; display: inline-block; }
+
+        /* 💫 GLOW */
+        .glow {
+            text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor;
+        }
+
+        /* 🎯 STATUS BADGE */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        .status-online {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            color: white;
+        }
+        .status-waiting {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+        }
+
+        /* 🏆 WINNER MODAL */
+        @keyframes winnerPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .winner-card {
+            animation: winnerPulse 1s ease-in-out infinite;
+        }
+
+        /* SCROLLBAR */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.5); }
+
+        /* INPUT STYLES */
+        .input-fun {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 16px;
+            padding: 14px 18px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+        .input-fun:focus {
+            border-color: rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.15);
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+        }
+        .input-fun::placeholder {
+            color: rgba(255,255,255,0.5);
+        }
+
+        /* SELECT STYLES */
+        .select-fun {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 16px;
+            padding: 14px 18px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            outline: none;
+        }
+        .select-fun option {
+            background: #2d1f4e;
+            color: white;
+        }
     </style>
 </head>
 <body>
-    <div class="app-bg"><div class="grid-overlay"></div></div>
-    <div id="root" class="w-full h-full"></div>
+    <!-- 🌈 Animated Background -->
+    <div class="magic-bg"></div>
+    
+    <!-- ✨ Floating Particles -->
+    <div class="particles" id="particles"></div>
+    
+    <!-- 🌟 Twinkling Stars -->
+    <div class="stars" id="stars"></div>
+    
+    <div id="root" class="w-full h-full relative z-10"></div>
+
+    <script>
+        // Create floating particles
+        const particlesContainer = document.getElementById('particles');
+        const colors = ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd', '#00d2d3', '#ff9f43'];
+        
+        for (let i = 0; i < 20; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.width = Math.random() * 30 + 10 + 'px';
+            particle.style.height = particle.style.width;
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+            particle.style.animationDelay = Math.random() * 20 + 's';
+            particle.style.animationDuration = Math.random() * 10 + 15 + 's';
+            particlesContainer.appendChild(particle);
+        }
+
+        // Create twinkling stars
+        const starsContainer = document.getElementById('stars');
+        for (let i = 0; i < 50; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 100 + '%';
+            star.style.animationDelay = Math.random() * 2 + 's';
+            starsContainer.appendChild(star);
+        }
+    </script>
 
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
-        const BADGES = { first_win: {icon:"⭐",name:"İlk Zafer"}, mangala_master: {icon:"🦁",name:"Mangala Kurdu"}, reversi_brain: {icon:"🧠",name:"Strateji Dehası"}, streak_fire: {icon:"🔥",name:"Yenilmez"} };
+        
+        // 🏆 KAPSAMLI ROZET SİSTEMİ
+        const BADGES = {
+            // 🌟 BAŞLANGIÇ ROZETLERİ
+            first_win: { icon: "⭐", name: "İlk Zafer", desc: "İlk galibiyetini kazan", color: "#ffd700", rarity: "common" },
+            first_blood: { icon: "🎯", name: "İlk Adım", desc: "İlk oyununu tamamla", color: "#4ade80", rarity: "common" },
+            
+            // 🎮 OYUN USTALIĞI ROZETLERİ
+            mangala_novice: { icon: "🥉", name: "Mangala Çırağı", desc: "Mangala'da 3 galibiyet", color: "#cd7f32", rarity: "common" },
+            mangala_master: { icon: "🦁", name: "Mangala Ustası", desc: "Mangala'da 10 galibiyet", color: "#ff9f43", rarity: "rare" },
+            mangala_legend: { icon: "👑", name: "Mangala Kralı", desc: "Mangala'da 25 galibiyet", color: "#ffd700", rarity: "legendary" },
+            
+            reversi_novice: { icon: "🎲", name: "Reversi Başlangıç", desc: "Reversi'de 3 galibiyet", color: "#22d3ee", rarity: "common" },
+            reversi_brain: { icon: "🧠", name: "Strateji Dehası", desc: "Reversi'de 10 galibiyet", color: "#54a0ff", rarity: "rare" },
+            reversi_genius: { icon: "🔮", name: "Reversi Büyücüsü", desc: "Reversi'de 25 galibiyet", color: "#a855f7", rarity: "legendary" },
+            
+            pentago_novice: { icon: "🎯", name: "Pentago Acemi", desc: "Pentago'da 3 galibiyet", color: "#f472b6", rarity: "common" },
+            pentago_pro: { icon: "💎", name: "Pentago Pro", desc: "Pentago'da 10 galibiyet", color: "#5f27cd", rarity: "rare" },
+            pentago_master: { icon: "🌟", name: "Pentago Efsanesi", desc: "Pentago'da 25 galibiyet", color: "#ec4899", rarity: "legendary" },
+            
+            // 🔥 SERİ ROZETLERİ
+            streak_3: { icon: "🔥", name: "Ateş Başladı", desc: "3 maç üst üste kazan", color: "#f97316", rarity: "common" },
+            streak_5: { icon: "💥", name: "Durdurulamaz", desc: "5 maç üst üste kazan", color: "#ef4444", rarity: "rare" },
+            streak_10: { icon: "☄️", name: "Meteor", desc: "10 maç üst üste kazan", color: "#dc2626", rarity: "epic" },
+            
+            // 🏆 TOPLAM GALİBİYET ROZETLERİ
+            wins_5: { icon: "🎖️", name: "Yıldız Aday", desc: "Toplam 5 galibiyet", color: "#84cc16", rarity: "common" },
+            wins_10: { icon: "🏅", name: "Bronz Şampiyon", desc: "Toplam 10 galibiyet", color: "#cd7f32", rarity: "common" },
+            wins_25: { icon: "🥈", name: "Gümüş Şampiyon", desc: "Toplam 25 galibiyet", color: "#c0c0c0", rarity: "rare" },
+            wins_50: { icon: "🥇", name: "Altın Şampiyon", desc: "Toplam 50 galibiyet", color: "#ffd700", rarity: "epic" },
+            wins_100: { icon: "💎", name: "Elmas Şampiyon", desc: "Toplam 100 galibiyet", color: "#06b6d4", rarity: "legendary" },
+            
+            // 🌈 ÇOKLU OYUN ROZETLERİ
+            all_rounder: { icon: "🌈", name: "Çok Yönlü", desc: "Her oyundan en az 1 galibiyet", color: "#8b5cf6", rarity: "rare" },
+            triple_master: { icon: "🎪", name: "Üçlü Usta", desc: "Her oyundan en az 5 galibiyet", color: "#f43f5e", rarity: "epic" },
+            ultimate_champion: { icon: "👸", name: "Süper Şampiyon", desc: "Her oyundan en az 15 galibiyet", color: "#fbbf24", rarity: "legendary" },
+            
+            // ⚡ ÖZEL ROZETLER
+            comeback_king: { icon: "⚡", name: "Geri Dönüş Kralı", desc: "Kaybederken geri dön ve kazan", color: "#eab308", rarity: "rare" },
+            speed_demon: { icon: "🚀", name: "Hız Şeytanı", desc: "2 dakikadan kısa sürede kazan", color: "#f43f5e", rarity: "rare" },
+            perfect_game: { icon: "💯", name: "Mükemmel Oyun", desc: "Mangala'da 30+ taş farkla kazan", color: "#10b981", rarity: "epic" },
+            
+            // 🎉 SOSYAL ROZETLER
+            social_butterfly: { icon: "🦋", name: "Sosyal Kelebek", desc: "10 farklı rakiple oyna", color: "#d946ef", rarity: "rare" },
+            veteran: { icon: "🎓", name: "Veteran", desc: "50 oyun tamamla", color: "#6366f1", rarity: "epic" },
+            legend: { icon: "🌟", name: "Efsane", desc: "100 oyun tamamla", color: "#eab308", rarity: "legendary" },
+            
+            // 🎁 SEZONLuk ROZETLER (Öğretmen tarafından verilebilir)
+            tournament_winner: { icon: "🏆", name: "Turnuva Şampiyonu", desc: "Okul turnuvasını kazan", color: "#fbbf24", rarity: "legendary" },
+            fair_play: { icon: "🤝", name: "Fair Play", desc: "Örnek sporcu davranışı", color: "#14b8a6", rarity: "special" },
+            rising_star: { icon: "💫", name: "Yükselen Yıldız", desc: "En çok gelişen oyuncu", color: "#f472b6", rarity: "special" },
+            brain_master: { icon: "🧩", name: "Beyin Ustası", desc: "Zeka oyunlarında üstün başarı", color: "#8b5cf6", rarity: "special" }
+        };
 
-        // --- GAME LOGIC (UNCHANGED) ---
+        // Rozet nadirlik renkleri
+        const RARITY_COLORS = {
+            common: { bg: "from-gray-400 to-gray-600", border: "border-gray-400", text: "text-gray-300" },
+            rare: { bg: "from-blue-400 to-blue-600", border: "border-blue-400", text: "text-blue-300" },
+            epic: { bg: "from-purple-400 to-purple-600", border: "border-purple-400", text: "text-purple-300" },
+            legendary: { bg: "from-yellow-400 to-orange-500", border: "border-yellow-400", text: "text-yellow-300" },
+            special: { bg: "from-pink-400 to-rose-500", border: "border-pink-400", text: "text-pink-300" }
+        };
+
+        const RARITY_NAMES = {
+            common: "Yaygın",
+            rare: "Nadir",
+            epic: "Epik",
+            legendary: "Efsanevi",
+            special: "Özel"
+        };
+
+        // 🎉 Confetti Effect
+        const createConfetti = () => {
+            const colors = ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd'];
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDelay = Math.random() * 2 + 's';
+                confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+                document.body.appendChild(confetti);
+                setTimeout(() => confetti.remove(), 5000);
+            }
+        };
+
+        // --- GAME LOGIC ---
         function useMangalaGame(gameData, gameId, playerRole, onWin) {
             const moveStone = (pitIndex) => {
                 if (gameData.winner) return;
@@ -202,83 +546,229 @@
             return { makeMove };
         }
 
-        // --- RESPONSIVE GAME COMPONENTS ---
+        function usePentagoGame(gameData, gameId, playerRole, onWin) {
+            const checkWinner = (board) => {
+                const lines = [];
+                for (let r = 0; r < 6; r++) {
+                    lines.push([r*6, r*6+1, r*6+2, r*6+3, r*6+4]);
+                    lines.push([r*6+1, r*6+2, r*6+3, r*6+4, r*6+5]);
+                }
+                for (let c = 0; c < 6; c++) {
+                    lines.push([c, c+6, c+12, c+18, c+24]);
+                    lines.push([c+6, c+12, c+18, c+24, c+30]);
+                }
+                lines.push([0, 7, 14, 21, 28]); lines.push([1, 8, 15, 22, 29]); lines.push([6, 13, 20, 27, 34]);
+                lines.push([7, 14, 21, 28, 35]); lines.push([1, 8, 15, 22, 29]); lines.push([2, 9, 16, 23, 30]);
+                lines.push([4, 9, 14, 19, 24]); lines.push([5, 10, 15, 20, 25]); lines.push([10, 15, 20, 25, 30]);
+                lines.push([3, 8, 13, 18, 23]); lines.push([4, 9, 14, 19, 24]); lines.push([11, 16, 21, 26, 31]);
+                
+                let p1Wins = false, p2Wins = false;
+                lines.forEach(line => {
+                    if (line.every(i => board[i] === 1)) p1Wins = true;
+                    if (line.every(i => board[i] === 2)) p2Wins = true;
+                });
+                if (p1Wins && p2Wins) return 'draw';
+                if (p1Wins) return 'p1';
+                if (p2Wins) return 'p2';
+                return null;
+            };
+
+            const rotateQuadrant = (board, quadrant, clockwise) => {
+                const newBoard = [...board];
+                const starts = [0, 3, 18, 21];
+                const start = starts[quadrant];
+                const offsets = [0, 1, 2, 6, 7, 8, 12, 13, 14];
+                const indices = offsets.map(o => start + o);
+                const values = indices.map(i => board[i]);
+                const cwMap = [6, 3, 0, 7, 4, 1, 8, 5, 2];
+                const ccwMap = [2, 5, 8, 1, 4, 7, 0, 3, 6];
+                const map = clockwise ? cwMap : ccwMap;
+                map.forEach((from, to) => { newBoard[indices[to]] = values[from]; });
+                return newBoard;
+            };
+
+            const placeStone = (cellIndex) => {
+                if (gameData.winner || gameData.phase === 'rotate') return;
+                const isP1Turn = gameData.isP1Turn;
+                if ((playerRole === 'P1' && !isP1Turn) || (playerRole === 'P2' && isP1Turn)) return;
+                const board = [...gameData.board];
+                if (board[cellIndex] !== 0) return;
+                const myColor = isP1Turn ? 1 : 2;
+                board[cellIndex] = myColor;
+                window.dbUpdate(window.dbRef(window.db, 'games/' + gameId), { board: board, phase: 'rotate', lastPlaced: cellIndex });
+            };
+
+            const doRotate = (quadrant, clockwise) => {
+                if (gameData.winner || gameData.phase !== 'rotate') return;
+                const isP1Turn = gameData.isP1Turn;
+                if ((playerRole === 'P1' && !isP1Turn) || (playerRole === 'P2' && isP1Turn)) return;
+                
+                let board = rotateQuadrant([...gameData.board], quadrant, clockwise);
+                const result = checkWinner(board);
+                
+                let w = null;
+                if (result === 'p1') { w = gameData.players.p1.name; if(playerRole === 'P1') onWin('pentago'); }
+                else if (result === 'p2') { w = gameData.players.p2.name; if(playerRole === 'P2') onWin('pentago'); }
+                else if (result === 'draw') { w = 'Berabere'; }
+                else if (!board.includes(0)) { w = 'Berabere'; }
+                
+                window.dbUpdate(window.dbRef(window.db, 'games/' + gameId), { board: board, isP1Turn: !isP1Turn, phase: 'place', winner: w, lastPlaced: null });
+            };
+
+            return { placeStone, doRotate };
+        }
+
+        // 🎮 MANGALA BOARD COMPONENT
         const MangalaBoard = ({ game, playerRole, onMove }) => {
             const board = (game.board || []).map(n => parseInt(n, 10) || 0);
             const isMyTurn = (playerRole === 'P1' && game.isP1Turn) || (playerRole === 'P2' && !game.isP1Turn);
 
-            const Pit = ({ c, owner, store, act, active }) => {
-                const count = Math.max(0, c || 0);
-                const marbles = [...Array(Math.min(count, 15))].map((_, i) => {
-                    const angle = i * (360 / Math.min(count, 8));
-                    const dist = Math.min(i * 2, 10);
-                    const x = Math.cos(angle * Math.PI / 180) * dist;
-                    const y = Math.sin(angle * Math.PI / 180) * dist;
-                    const color = owner==='me' ? 'bg-amber-400' : 'bg-cyan-400';
-                    return <div key={i} className={`w-2.5 h-2.5 sm:w-3 sm:h-3 marble ${color}`} style={{transform: `translate(${x}px, ${y}px)`}}></div>
+            const Pit = ({ count, owner, store, onClick, active }) => {
+                const marbles = [...Array(Math.min(count, 12))].map((_, i) => {
+                    const angle = (i / Math.min(count, 12)) * 360;
+                    const radius = store ? (count > 6 ? 25 : 15) : (count > 4 ? 12 : 8);
+                    const x = Math.cos(angle * Math.PI / 180) * radius;
+                    const y = Math.sin(angle * Math.PI / 180) * radius;
+                    return (
+                        <div 
+                            key={i} 
+                            className={`marble ${owner === 'opponent' ? 'marble-opponent' : ''}`}
+                            style={{
+                                width: store ? '12px' : '10px',
+                                height: store ? '12px' : '10px',
+                                transform: `translate(${x}px, ${y}px)`,
+                                animationDelay: `${i * 0.05}s`
+                            }}
+                        />
+                    );
                 });
 
                 return (
-                    <div onClick={act} className={`relative flex items-center justify-center rounded-2xl pit overflow-hidden
-                        ${store ? 'w-full h-full' : 'w-full aspect-square'}
-                        ${active ? 'pit-active' : 'opacity-75'}
-                    `}>
-                        <div className="flex items-center justify-center w-full h-full relative">{marbles}</div>
-                        <div className={`absolute bottom-0 right-0 px-1.5 py-0.5 text-[10px] sm:text-xs font-bold bg-slate-900/80 text-white rounded-tl-lg border-l border-t border-slate-700`}>{count}</div>
+                    <div 
+                        onClick={onClick}
+                        className={`pit flex items-center justify-center relative
+                            ${store ? 'w-20 sm:w-24 h-32 sm:h-40 rounded-[40px]' : 'w-12 sm:w-14 h-12 sm:h-14'}
+                            ${active ? 'pit-active cursor-pointer' : 'cursor-default'}
+                            ${owner === 'me' ? 'bg-gradient-to-br from-amber-900/50 to-orange-900/50' : 'bg-gradient-to-br from-cyan-900/50 to-blue-900/50'}
+                        `}
+                    >
+                        <div className="relative flex items-center justify-center">
+                            {marbles}
+                        </div>
+                        <div className={`absolute ${store ? 'bottom-2' : '-bottom-6'} left-1/2 -translate-x-1/2 
+                            px-2 py-1 rounded-full text-xs font-bold
+                            ${owner === 'me' ? 'bg-amber-500 text-white' : 'bg-cyan-500 text-white'}`}>
+                            {count}
+                        </div>
                     </div>
                 );
             };
 
             return (
-                <div className="w-full h-full p-2 sm:p-6 flex flex-col md:flex-row gap-4 items-center justify-center bg-slate-900/50 backdrop-blur-sm relative">
-                    
-                    {/* RAKİP ALANI (MOBİLDE ÜSTTE, PCDE SOLDA) */}
-                    <div className="flex flex-row md:flex-col items-center gap-2 w-full md:w-24 h-24 md:h-full justify-center">
-                        <div className="text-[10px] font-bold text-slate-500 tracking-wider bg-slate-950 px-2 py-1 rounded">RAKİP</div>
-                        <div className="h-full w-24 md:w-full md:h-48 rounded-2xl overflow-hidden border border-slate-700 bg-slate-950/50">
-                            <Pit c={playerRole==='P1'?board[13]:board[6]} owner="opponent" store={true} />
+                <div className="w-full h-full flex flex-col md:flex-row items-center justify-center gap-4 p-4">
+                    {/* Opponent Store */}
+                    <div className="flex flex-col items-center gap-2">
+                        <span className="text-cyan-400 text-sm font-bold flex items-center gap-2">
+                            <span className="wave">👤</span> {game.players[playerRole === 'P1' ? 'p2' : 'p1'].name.split(' ')[0]}
+                        </span>
+                        <Pit count={playerRole === 'P1' ? board[13] : board[6]} owner="opponent" store={true} />
+                    </div>
+
+                    {/* Main Board */}
+                    <div className="glass-card-dark p-4 sm:p-6 flex flex-col gap-4">
+                        {/* Opponent Row */}
+                        <div className="flex justify-center gap-2 sm:gap-3">
+                            {[0,1,2,3,4,5].map(i => {
+                                const idx = playerRole === 'P1' ? (12 - i) : (5 - i);
+                                return <Pit key={idx} count={board[idx]} owner="opponent" />;
+                            })}
+                        </div>
+                        
+                        {/* Turn Indicator */}
+                        <div className="flex justify-center">
+                            <div className={`status-badge ${isMyTurn ? 'status-online' : 'status-waiting'}`}>
+                                {isMyTurn ? (
+                                    <><span className="wave">🎯</span> Senin Sıran!</>
+                                ) : (
+                                    <><span className="animate-pulse">⏳</span> Rakip Oynuyor...</>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* My Row */}
+                        <div className="flex justify-center gap-2 sm:gap-3">
+                            {[0,1,2,3,4,5].map(i => {
+                                const idx = playerRole === 'P1' ? i : (i + 7);
+                                return (
+                                    <Pit 
+                                        key={idx} 
+                                        count={board[idx]} 
+                                        owner="me" 
+                                        active={isMyTurn && board[idx] > 0}
+                                        onClick={() => isMyTurn && onMove(idx)}
+                                    />
+                                );
+                            })}
                         </div>
                     </div>
 
-                    {/* OYUN ALANI (ORTA) */}
-                    <div className="flex-1 w-full max-w-2xl flex flex-col gap-4">
-                        {/* Rakip Sırası */}
-                        <div className="grid grid-cols-6 gap-2 sm:gap-4 p-3 bg-slate-950/30 rounded-2xl border border-slate-800">
-                             {[0,1,2,3,4,5].map(i => { const idx = playerRole==='P1' ? (12-i) : (5-i); return <Pit key={idx} c={board[idx]} owner="opponent"/> })}
-                        </div>
-                        {/* Benim Sıram */}
-                        <div className={`grid grid-cols-6 gap-2 sm:gap-4 p-3 rounded-2xl border transition-colors ${isMyTurn ? 'bg-blue-900/10 border-blue-500/30' : 'bg-slate-950/30 border-slate-800'}`}>
-                             {[0,1,2,3,4,5].map(i => { const idx = playerRole==='P1' ? i : (i+7); return <Pit key={idx} c={board[idx]} owner="me" active={isMyTurn} act={()=>isMyTurn && onMove(idx)}/> })}
-                        </div>
-                    </div>
-
-                    {/* BENİM ALANIM (MOBİLDE ALTTA, PCDE SAĞDA) */}
-                    <div className="flex flex-row md:flex-col items-center gap-2 w-full md:w-24 h-24 md:h-full justify-center">
-                        <div className="text-[10px] font-bold text-amber-500 tracking-wider bg-slate-950 px-2 py-1 rounded">SEN</div>
-                        <div className="h-full w-24 md:w-full md:h-48 rounded-2xl overflow-hidden border border-amber-900/30 bg-slate-950/50">
-                            <Pit c={playerRole==='P1'?board[6]:board[13]} owner="me" store={true} />
-                        </div>
+                    {/* My Store */}
+                    <div className="flex flex-col items-center gap-2">
+                        <span className="text-amber-400 text-sm font-bold flex items-center gap-2">
+                            <span className="wave">⭐</span> Sen
+                        </span>
+                        <Pit count={playerRole === 'P1' ? board[6] : board[13]} owner="me" store={true} />
                     </div>
                 </div>
             );
         };
 
+        // 🎮 REVERSI BOARD COMPONENT
         const ReversiBoard = ({ game, playerRole, onMove }) => {
             const board = (game.board || []).map(n => parseInt(n, 10) || 0);
             const isMyTurn = (playerRole === 'P1' && game.isP1Turn) || (playerRole === 'P2' && !game.isP1Turn); 
-            const black = board.filter(x=>x===1).length; const white = board.filter(x=>x===2).length;
+            const black = board.filter(x=>x===1).length; 
+            const white = board.filter(x=>x===2).length;
             
             return (
-                <div className="flex flex-col md:flex-row gap-6 items-center justify-center w-full h-full p-4 overflow-y-auto">
-                    <div className="flex flex-row md:flex-col gap-4 w-full md:w-auto justify-center">
-                        <div className="glass-box p-3 rounded-xl flex items-center justify-between gap-4 w-32"><div className="w-6 h-6 bg-black rounded-full border border-gray-600"></div><span className="text-2xl font-bold">{black}</span></div>
-                        <div className="glass-box p-3 rounded-xl flex items-center justify-between gap-4 w-32 bg-slate-200 text-black"><div className="w-6 h-6 bg-white rounded-full border border-gray-300"></div><span className="text-2xl font-bold">{white}</span></div>
+                <div className="flex flex-col items-center justify-center w-full h-full p-4 gap-4 overflow-auto">
+                    {/* Score Panel */}
+                    <div className="flex items-center gap-4">
+                        <div className={`glass-card px-4 py-2 flex items-center gap-3 ${playerRole === 'P1' ? 'ring-2 ring-amber-400' : ''}`}>
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-700 to-black shadow-lg"></div>
+                            <span className="text-2xl font-bold text-white">{black}</span>
+                        </div>
+                        
+                        <div className={`status-badge ${isMyTurn ? 'status-online' : 'status-waiting'}`}>
+                            {isMyTurn ? '🎯 Oyna!' : '⏳ Bekle'}
+                        </div>
+                        
+                        <div className={`glass-card px-4 py-2 flex items-center gap-3 ${playerRole === 'P2' ? 'ring-2 ring-amber-400' : ''}`}>
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-100 to-white shadow-lg"></div>
+                            <span className="text-2xl font-bold text-white">{white}</span>
+                        </div>
                     </div>
-                    <div className="bg-green-800 p-2 rounded-lg shadow-2xl border-4 border-green-900 w-full max-w-[400px] aspect-square">
-                        <div className="grid grid-cols-8 gap-1 h-full">
+
+                    {/* Board */}
+                    <div className="bg-gradient-to-br from-green-700 to-green-900 p-2 rounded-2xl shadow-2xl border-4 border-green-950">
+                        <div className="grid grid-cols-8 gap-1">
                             {board.map((cell, i) => (
-                                <div key={i} onClick={() => isMyTurn && onMove(Math.floor(i/8), i%8)} className="bg-green-600 hover:bg-green-500 cursor-pointer flex items-center justify-center rounded-sm">
-                                    {cell !== 0 && <div className={`w-[80%] h-[80%] rounded-full shadow-md transition-transform duration-300 hover:scale-105 ${cell===1?'bg-black border border-gray-700':'bg-white border border-gray-300'}`}></div>}
+                                <div 
+                                    key={i} 
+                                    onClick={() => isMyTurn && onMove(Math.floor(i/8), i%8)}
+                                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center
+                                        bg-green-600 hover:bg-green-500 cursor-pointer transition-all
+                                        ${isMyTurn && cell === 0 ? 'hover:ring-2 hover:ring-yellow-400' : ''}
+                                    `}
+                                >
+                                    {cell !== 0 && (
+                                        <div className={`w-[80%] h-[80%] rounded-full shadow-lg transition-all duration-300 transform hover:scale-110
+                                            ${cell === 1 
+                                                ? 'bg-gradient-to-br from-gray-600 to-black border-2 border-gray-500' 
+                                                : 'bg-gradient-to-br from-white to-gray-200 border-2 border-gray-300'
+                                            }
+                                        `}></div>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -287,141 +777,889 @@
             );
         };
 
-        const ProfileModal = ({ user, onClose, onLogout }) => (
-            <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-                <div className="glass-box w-full max-w-sm rounded-2xl overflow-hidden anim-pop shadow-2xl" onClick={e=>e.stopPropagation()}>
-                    <div className="p-6 text-center border-b border-white/10 relative">
-                        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white"><i className="fas fa-times"></i></button>
-                        <div className="w-20 h-20 mx-auto bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-3xl font-bold mb-3 shadow-lg">{user.name.charAt(0)}</div>
-                        <h2 className="text-xl font-bold text-white">{user.name}</h2>
-                        <p className="text-slate-400 text-sm">{user.schoolName}</p>
-                    </div>
-                    <div className="p-4 grid grid-cols-2 gap-3 text-center">
-                        <div className="bg-slate-950/50 p-2 rounded-xl border border-white/5"><div className="text-xl font-bold text-blue-400">{user.stats?.wins||0}</div><div className="text-[10px] text-slate-500">ZAFER</div></div>
-                        <div className="bg-slate-950/50 p-2 rounded-xl border border-white/5"><div className="text-xl font-bold text-amber-400">{(user.badges||[]).length}</div><div className="text-[10px] text-slate-500">ROZET</div></div>
-                    </div>
-                    <div className="p-4 bg-slate-950/30 max-h-[200px] overflow-y-auto">
-                        <h3 className="text-[10px] font-bold text-slate-500 mb-2 tracking-wider">ROZETLERİM</h3>
-                        {user.badges && user.badges.length > 0 ? (
-                            <div className="grid grid-cols-1 gap-2">
-                                {user.badges.map(b => (
-                                    <div key={b} className="flex items-center gap-3 p-2 rounded bg-slate-800/50 border border-white/5">
-                                        <div className="text-lg">{BADGES[b]?.icon}</div>
-                                        <div className="text-left text-xs font-bold text-slate-300">{BADGES[b]?.name}</div>
+        // 🎮 PENTAGO BOARD COMPONENT
+        const PentagoBoard = ({ game, playerRole, onPlace, onRotate }) => {
+            const board = (game.board || Array(36).fill(0)).map(n => parseInt(n, 10) || 0);
+            const isMyTurn = (playerRole === 'P1' && game.isP1Turn) || (playerRole === 'P2' && !game.isP1Turn);
+            const phase = game.phase || 'place';
+            const p1Count = board.filter(x => x === 1).length;
+            const p2Count = board.filter(x => x === 2).length;
+
+            const getQuadrantCells = (qId) => {
+                const starts = [0, 3, 18, 21];
+                const start = starts[qId];
+                const offsets = [0, 1, 2, 6, 7, 8, 12, 13, 14];
+                return offsets.map(o => start + o);
+            };
+
+            const QuadrantGrid = ({ qId }) => {
+                const cells = getQuadrantCells(qId);
+                const canRotate = isMyTurn && phase === 'rotate';
+                
+                return (
+                    <div className="relative group">
+                        <div className={`grid grid-cols-3 gap-1 p-2 rounded-xl transition-all duration-300 
+                            ${canRotate 
+                                ? 'bg-gradient-to-br from-purple-600/50 to-pink-600/50 ring-2 ring-purple-400 animate-pulse' 
+                                : 'bg-white/10'
+                            }`}>
+                            {cells.map((cellIdx) => {
+                                const cell = board[cellIdx];
+                                const canPlace = isMyTurn && phase === 'place' && cell === 0;
+                                const isLastPlaced = game.lastPlaced === cellIdx;
+                                
+                                return (
+                                    <div 
+                                        key={cellIdx} 
+                                        onClick={() => canPlace && onPlace(cellIdx)}
+                                        className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center 
+                                            bg-gradient-to-br from-slate-800 to-slate-900 transition-all duration-200
+                                            ${canPlace ? 'hover:from-slate-700 hover:to-slate-800 cursor-pointer hover:scale-105' : ''}
+                                            ${isLastPlaced ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-transparent' : ''}
+                                        `}
+                                    >
+                                        {cell !== 0 && (
+                                            <div className={`w-[70%] h-[70%] rounded-full shadow-lg transition-transform 
+                                                ${cell === 1 
+                                                    ? 'bg-gradient-to-br from-rose-400 to-rose-600 border-2 border-rose-300' 
+                                                    : 'bg-gradient-to-br from-cyan-400 to-cyan-600 border-2 border-cyan-300'
+                                                }
+                                                ${isLastPlaced ? 'scale-110 animate-bounce' : ''}
+                                            `}></div>
+                                        )}
                                     </div>
-                                ))}
+                                );
+                            })}
+                        </div>
+                        
+                        {canRotate && (
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                                <div className="flex gap-2 bg-black/80 backdrop-blur p-2 rounded-xl">
+                                    <button 
+                                        onClick={() => onRotate(qId, false)} 
+                                        className="btn-fun btn-warning py-2 px-3 text-sm"
+                                    >
+                                        <i className="fas fa-undo"></i>
+                                    </button>
+                                    <button 
+                                        onClick={() => onRotate(qId, true)} 
+                                        className="btn-fun btn-success py-2 px-3 text-sm"
+                                    >
+                                        <i className="fas fa-redo"></i>
+                                    </button>
+                                </div>
                             </div>
-                        ) : (
-                            <div className="text-center text-slate-600 text-xs py-4">Henüz rozet kazanılmadı.</div>
                         )}
                     </div>
-                    <button onClick={onLogout} className="w-full py-4 bg-red-900/20 text-red-400 text-xs font-bold hover:bg-red-900/30 transition-colors border-t border-white/5">ÇIKIŞ YAP</button>
-                </div>
-            </div>
-        );
+                );
+            };
 
+            return (
+                <div className="flex flex-col items-center justify-center w-full h-full p-4 gap-4 overflow-auto">
+                    {/* Score Panel */}
+                    <div className="flex flex-wrap items-center justify-center gap-3">
+                        <div className={`glass-card px-4 py-2 flex items-center gap-2 ${playerRole === 'P1' ? 'ring-2 ring-rose-400' : ''}`}>
+                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-rose-400 to-rose-600"></div>
+                            <span className="font-bold text-white">{game.players?.p1?.name?.split(' ')[0]}</span>
+                            <span className="text-xl font-bold text-rose-400">{p1Count}</span>
+                        </div>
+                        
+                        <div className={`status-badge ${isMyTurn ? (phase === 'place' ? 'status-online' : 'status-waiting') : 'bg-gray-600 text-white'}`}>
+                            {!isMyTurn ? '⏳ Bekle' : (phase === 'place' ? '🎯 Taş Koy' : '🔄 Döndür')}
+                        </div>
+                        
+                        <div className={`glass-card px-4 py-2 flex items-center gap-2 ${playerRole === 'P2' ? 'ring-2 ring-cyan-400' : ''}`}>
+                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600"></div>
+                            <span className="font-bold text-white">{game.players?.p2?.name?.split(' ')[0]}</span>
+                            <span className="text-xl font-bold text-cyan-400">{p2Count}</span>
+                        </div>
+                    </div>
+
+                    {/* Board */}
+                    <div className="glass-card-dark p-3 sm:p-4">
+                        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                            {[0, 1, 2, 3].map(qId => (
+                                <QuadrantGrid key={qId} qId={qId} />
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Info */}
+                    <div className="glass-card px-4 py-2 text-center">
+                        <p className="text-xs text-white/70">
+                            <span className="text-yellow-400 font-bold">💡 İpucu:</span> 5 taşı yan yana diz ve kazan!
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+
+        // 👤 PROFILE MODAL - ROZET GALERİSİ İLE
+        const ProfileModal = ({ user, onClose, onLogout }) => {
+            const [activeTab, setActiveTab] = useState('badges');
+            const userBadges = user.badges || [];
+            const allBadgeKeys = Object.keys(BADGES);
+            
+            // Rozet istatistikleri
+            const earnedCount = userBadges.length;
+            const totalCount = allBadgeKeys.length;
+            const percentage = Math.round((earnedCount / totalCount) * 100);
+            
+            // Nadirliğe göre grupla
+            const groupedBadges = {
+                legendary: allBadgeKeys.filter(k => BADGES[k].rarity === 'legendary'),
+                epic: allBadgeKeys.filter(k => BADGES[k].rarity === 'epic'),
+                rare: allBadgeKeys.filter(k => BADGES[k].rarity === 'rare'),
+                special: allBadgeKeys.filter(k => BADGES[k].rarity === 'special'),
+                common: allBadgeKeys.filter(k => BADGES[k].rarity === 'common')
+            };
+
+            return (
+                <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+                    <div className="glass-card w-full max-w-lg max-h-[90vh] overflow-hidden pop-in flex flex-col" onClick={e => e.stopPropagation()}>
+                        {/* Header */}
+                        <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 p-6 text-center relative flex-shrink-0">
+                            <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition">
+                                <i className="fas fa-times"></i>
+                            </button>
+                            <div className="w-20 h-20 mx-auto bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-3xl font-bold text-white shadow-xl mb-3 bounce ring-4 ring-white/30">
+                                {user.name.charAt(0)}
+                            </div>
+                            <h2 className="text-xl font-bold text-white">{user.name}</h2>
+                            <p className="text-white/70 text-sm">{user.schoolName} • {user.class}</p>
+                        </div>
+                        
+                        {/* Stats Bar */}
+                        <div className="p-4 grid grid-cols-3 gap-3 bg-white/5 flex-shrink-0">
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-yellow-400">{user.stats?.wins || 0}</div>
+                                <div className="text-xs text-white/50">🏆 Galibiyet</div>
+                            </div>
+                            <div className="text-center border-x border-white/10">
+                                <div className="text-2xl font-bold text-purple-400">{earnedCount}</div>
+                                <div className="text-xs text-white/50">🎖️ Rozet</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-cyan-400">{user.stats?.totalGames || 0}</div>
+                                <div className="text-xs text-white/50">🎮 Oyun</div>
+                            </div>
+                        </div>
+
+                        {/* Tabs */}
+                        <div className="flex bg-white/5 p-1 mx-4 rounded-xl flex-shrink-0">
+                            <button 
+                                onClick={() => setActiveTab('badges')}
+                                className={`flex-1 py-2 px-4 rounded-lg font-bold text-sm transition-all ${activeTab === 'badges' ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : 'text-white/50 hover:text-white'}`}
+                            >
+                                🎖️ Rozetlerim
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab('gallery')}
+                                className={`flex-1 py-2 px-4 rounded-lg font-bold text-sm transition-all ${activeTab === 'gallery' ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : 'text-white/50 hover:text-white'}`}
+                            >
+                                🏆 Rozet Galerisi
+                            </button>
+                        </div>
+                        
+                        {/* Content */}
+                        <div className="flex-1 overflow-y-auto p-4">
+                            {activeTab === 'badges' ? (
+                                <>
+                                    {/* Progress Bar */}
+                                    <div className="mb-4 p-3 bg-white/5 rounded-xl">
+                                        <div className="flex justify-between text-xs mb-2">
+                                            <span className="text-white/60">Koleksiyon İlerlemesi</span>
+                                            <span className="text-white font-bold">{earnedCount}/{totalCount} ({percentage}%)</span>
+                                        </div>
+                                        <div className="h-3 bg-white/10 rounded-full overflow-hidden">
+                                            <div 
+                                                className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 rounded-full transition-all duration-1000"
+                                                style={{ width: `${percentage}%` }}
+                                            ></div>
+                                        </div>
+                                    </div>
+
+                                    {/* Kazanılan Rozetler */}
+                                    {userBadges.length > 0 ? (
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {userBadges.map(badgeKey => {
+                                                const badge = BADGES[badgeKey];
+                                                if (!badge) return null;
+                                                const rarity = RARITY_COLORS[badge.rarity];
+                                                return (
+                                                    <div 
+                                                        key={badgeKey} 
+                                                        className={`relative p-3 rounded-xl bg-gradient-to-br ${rarity.bg} border-2 ${rarity.border} shadow-lg hover:scale-105 transition-transform cursor-pointer`}
+                                                    >
+                                                        <div className="absolute top-1 right-1 text-[10px] px-2 py-0.5 rounded-full bg-black/30 text-white/80">
+                                                            {RARITY_NAMES[badge.rarity]}
+                                                        </div>
+                                                        <div className="text-3xl mb-1">{badge.icon}</div>
+                                                        <div className="font-bold text-white text-sm">{badge.name}</div>
+                                                        <div className="text-white/60 text-xs mt-1">{badge.desc}</div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-8 text-white/40">
+                                            <span className="text-5xl block mb-3">🎮</span>
+                                            <span className="text-sm">Henüz rozet kazanılmadı</span>
+                                            <p className="text-xs mt-2 text-white/30">Oyunlar oynayarak rozetler kazan!</p>
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                /* Tüm Rozetler Galerisi */
+                                <div className="space-y-4">
+                                    {Object.entries(groupedBadges).map(([rarity, badges]) => {
+                                        if (badges.length === 0) return null;
+                                        const rarityStyle = RARITY_COLORS[rarity];
+                                        return (
+                                            <div key={rarity}>
+                                                <div className={`text-xs font-bold ${rarityStyle.text} mb-2 flex items-center gap-2`}>
+                                                    {rarity === 'legendary' && '👑'}
+                                                    {rarity === 'epic' && '💜'}
+                                                    {rarity === 'rare' && '💙'}
+                                                    {rarity === 'special' && '💖'}
+                                                    {rarity === 'common' && '⚪'}
+                                                    {RARITY_NAMES[rarity]} Rozetler ({badges.filter(b => userBadges.includes(b)).length}/{badges.length})
+                                                </div>
+                                                <div className="grid grid-cols-4 gap-2">
+                                                    {badges.map(badgeKey => {
+                                                        const badge = BADGES[badgeKey];
+                                                        const isEarned = userBadges.includes(badgeKey);
+                                                        return (
+                                                            <div 
+                                                                key={badgeKey}
+                                                                className={`relative p-2 rounded-xl text-center transition-all cursor-pointer group
+                                                                    ${isEarned 
+                                                                        ? `bg-gradient-to-br ${rarityStyle.bg} border-2 ${rarityStyle.border}` 
+                                                                        : 'bg-white/5 border border-white/10 grayscale opacity-50'
+                                                                    }`}
+                                                                title={badge.desc}
+                                                            >
+                                                                <div className={`text-2xl ${isEarned ? '' : 'filter blur-[1px]'}`}>
+                                                                    {isEarned ? badge.icon : '❓'}
+                                                                </div>
+                                                                <div className="text-[10px] text-white/70 truncate mt-1">
+                                                                    {isEarned ? badge.name : '???'}
+                                                                </div>
+                                                                {/* Tooltip */}
+                                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 p-2 bg-black/90 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                                                                    <div className="font-bold">{badge.name}</div>
+                                                                    <div className="text-white/60 text-[10px] mt-1">{badge.desc}</div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* Logout */}
+                        <button onClick={onLogout} className="w-full py-4 bg-red-500/20 text-red-400 font-bold hover:bg-red-500/30 transition border-t border-white/10 flex-shrink-0">
+                            <i className="fas fa-sign-out-alt mr-2"></i> Çıkış Yap
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // 🔐 AUTH SCREEN
         const AuthScreen = ({ onLogin, onRegister }) => {
             const [mode, setMode] = useState("login");
-            const [schools, setSchools] = useState([]); const [schoolId, setSchoolId] = useState(""); const [number, setNumber] = useState(""); const [password, setPassword] = useState(""); const [name, setName] = useState(""); const [cls, setCls] = useState("");
-            useEffect(() => { if(window.dbRef) window.dbOnValue(window.dbRef(window.db, 'schools'), (snap) => { const val = snap.val(); if(val) setSchools(Object.values(val)); }); }, []);
-            const doAuth = () => { if(!schoolId || !number || !password) return alert("Eksik bilgi!"); if(mode === "login") onLogin(schoolId, number, password); else { if(!name || !cls) return alert("Ad ve Sınıf giriniz!"); const selectedSchool = schools.find(s => s.id === schoolId); onRegister({ schoolId, schoolName: selectedSchool.name, number, password, name, class: cls }); } };
-            
+            const [schools, setSchools] = useState([]);
+            const [schoolId, setSchoolId] = useState("");
+            const [number, setNumber] = useState("");
+            const [password, setPassword] = useState("");
+            const [name, setName] = useState("");
+            const [cls, setCls] = useState("");
+
+            useEffect(() => {
+                if (window.dbRef) {
+                    window.dbOnValue(window.dbRef(window.db, 'schools'), (snap) => {
+                        const val = snap.val();
+                        if (val) setSchools(Object.values(val));
+                    });
+                }
+            }, []);
+
+            const doAuth = () => {
+                if (!schoolId || !number || !password) return alert("Tüm alanları doldur! 📝");
+                if (mode === "login") {
+                    onLogin(schoolId, number, password);
+                } else {
+                    if (!name || !cls) return alert("Ad ve Sınıf bilgisi gerekli! 📚");
+                    const selectedSchool = schools.find(s => s.id === schoolId);
+                    onRegister({ schoolId, schoolName: selectedSchool.name, number, password, name, class: cls });
+                }
+            };
+
             return (
                 <div className="w-full h-full flex items-center justify-center p-4">
-                    <div className="glass-box w-full max-w-sm rounded-2xl p-8 anim-pop">
-                        <div className="text-center mb-6">
-                            <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400 tracking-wider">ARENA</h1>
-                            <p className="text-slate-500 text-[10px] tracking-[0.2em] uppercase">Akıl Zeka Oyunları</p>
+                    <div className="glass-card w-full max-w-md p-8 pop-in">
+                        {/* Logo */}
+                        <div className="text-center mb-8">
+                            <div className="text-6xl mb-4 bounce">🎮</div>
+                            <h1 className="text-4xl font-bold rainbow-text mb-2">AKIL ZEKA</h1>
+                            <p className="text-white/60 text-sm">Eğlenceli Oyun Dünyası</p>
                         </div>
-                        <div className="space-y-3">
-                            <div className="bg-slate-950/50 p-2 rounded border border-white/5">
-                                <label className="text-[10px] text-blue-500 font-bold block mb-1">OKUL</label>
-                                <select value={schoolId} onChange={e=>setSchoolId(e.target.value)} className="w-full bg-transparent text-sm outline-none font-bold"><option value="">Seçiniz</option>{schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
+
+                        {/* Toggle */}
+                        <div className="flex bg-white/10 rounded-full p-1 mb-6">
+                            <button 
+                                onClick={() => setMode("login")}
+                                className={`flex-1 py-2 px-4 rounded-full font-bold transition-all ${mode === 'login' ? 'bg-white text-purple-600' : 'text-white/70'}`}
+                            >
+                                🔑 Giriş
+                            </button>
+                            <button 
+                                onClick={() => setMode("register")}
+                                className={`flex-1 py-2 px-4 rounded-full font-bold transition-all ${mode === 'register' ? 'bg-white text-purple-600' : 'text-white/70'}`}
+                            >
+                                ✨ Kayıt
+                            </button>
+                        </div>
+
+                        {/* Form */}
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-white/60 text-sm font-bold mb-2 block">🏫 Okul</label>
+                                <select 
+                                    value={schoolId} 
+                                    onChange={e => setSchoolId(e.target.value)} 
+                                    className="select-fun w-full"
+                                >
+                                    <option value="">Okulunu Seç</option>
+                                    {schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                </select>
                             </div>
-                            {mode==="register" && <div className="grid grid-cols-2 gap-2"><input placeholder="Ad Soyad" value={name} onChange={e=>setName(e.target.value)} className="bg-slate-950/50 p-3 rounded border border-white/5 text-sm outline-none" /><input placeholder="Sınıf" value={cls} onChange={e=>setCls(e.target.value)} className="bg-slate-950/50 p-3 rounded border border-white/5 text-sm outline-none" /></div>}
-                            <div className="grid grid-cols-2 gap-2"><input placeholder="Numara" value={number} onChange={e=>setNumber(e.target.value)} className="bg-slate-950/50 p-3 rounded border border-white/5 text-sm text-center outline-none" /><input type="password" placeholder="Şifre" value={password} onChange={e=>setPassword(e.target.value)} className="bg-slate-950/50 p-3 rounded border border-white/5 text-sm text-center outline-none" /></div>
-                            <button onClick={doAuth} className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded font-bold text-sm shadow-lg shadow-blue-900/50 transition-all">{mode==="login"?"GİRİŞ":"KAYIT OL"}</button>
-                            <button onClick={()=>setMode(mode==="login"?"register":"login")} className="w-full text-xs text-slate-500 hover:text-white transition mt-2">{mode==="login"?"Hesap Oluştur":"Girişe Dön"}</button>
+
+                            {mode === "register" && (
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="text-white/60 text-sm font-bold mb-2 block">👤 Ad Soyad</label>
+                                        <input 
+                                            placeholder="Adın Soyadın" 
+                                            value={name} 
+                                            onChange={e => setName(e.target.value)} 
+                                            className="input-fun w-full"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-white/60 text-sm font-bold mb-2 block">📚 Sınıf</label>
+                                        <input 
+                                            placeholder="5-A" 
+                                            value={cls} 
+                                            onChange={e => setCls(e.target.value)} 
+                                            className="input-fun w-full"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-white/60 text-sm font-bold mb-2 block">🔢 Numara</label>
+                                    <input 
+                                        placeholder="1234" 
+                                        value={number} 
+                                        onChange={e => setNumber(e.target.value)} 
+                                        className="input-fun w-full text-center"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-white/60 text-sm font-bold mb-2 block">🔒 Şifre</label>
+                                    <input 
+                                        type="password" 
+                                        placeholder="••••••" 
+                                        value={password} 
+                                        onChange={e => setPassword(e.target.value)} 
+                                        className="input-fun w-full text-center"
+                                    />
+                                </div>
+                            </div>
+
+                            <button onClick={doAuth} className="btn-fun btn-primary w-full mt-4">
+                                {mode === "login" ? "🚀 Giriş Yap" : "✨ Kayıt Ol"}
+                            </button>
                         </div>
                     </div>
                 </div>
             );
         };
 
+        // 🎮 GAME SHELL
         const GameShell = ({ gameId, playerRole, onBack, onWin }) => {
             const [gameData, setGameData] = useState(null);
-            useEffect(() => { const sub = window.dbOnValue(window.dbRef(window.db, 'games/' + gameId), (s) => setGameData(s.val())); return () => sub(); }, [gameId]);
-            if (!gameData) return <div className="w-full h-full flex items-center justify-center"><i className="fas fa-circle-notch fa-spin text-4xl text-blue-500"></i></div>;
-            
-            return (
-                <div className="w-full h-full flex flex-col pc-container bg-slate-950/80 backdrop-blur-xl relative">
-                    {/* HEADER */}
-                    <div className="h-14 flex items-center justify-between px-4 border-b border-white/10 bg-slate-950/50 shrink-0">
-                        <div className="text-xs font-bold text-slate-500 border border-slate-700 px-2 py-1 rounded">#{gameId}</div>
-                        {gameData.winner ? 
-                             <div className="px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded text-xs font-bold animate-pulse">🏆 {gameData.winner}</div>
-                            : <div className={`px-3 py-1 rounded text-xs font-bold border ${((playerRole==='P1' && gameData.isP1Turn)||(playerRole==='P2' && !gameData.isP1Turn)) ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-slate-800 text-slate-500 border-slate-700'}`}>
-                                {((playerRole==='P1' && gameData.isP1Turn)||(playerRole==='P2' && !gameData.isP1Turn)) ? "HAMLE SIRASI" : "BEKLENİYOR"}
-                            </div>
-                        }
-                        <button onClick={onBack} className="w-8 h-8 flex items-center justify-center bg-red-500/10 text-red-500 rounded hover:bg-red-500 hover:text-white transition"><i className="fas fa-times"></i></button>
+
+            useEffect(() => {
+                const sub = window.dbOnValue(window.dbRef(window.db, 'games/' + gameId), (s) => setGameData(s.val()));
+                return () => sub();
+            }, [gameId]);
+
+            useEffect(() => {
+                if (gameData?.winner && gameData.winner !== 'Berabere') {
+                    createConfetti();
+                }
+            }, [gameData?.winner]);
+
+            if (!gameData) {
+                return (
+                    <div className="w-full h-full flex flex-col items-center justify-center">
+                        <div className="text-6xl mb-4 bounce">⏳</div>
+                        <p className="text-white/60 font-bold">Oyun Yükleniyor...</p>
                     </div>
-                    {/* GAME AREA */}
-                    <div className="flex-1 overflow-hidden relative">
-                         {gameData.type === 'reversi' ? 
-                            <ReversiBoard game={gameData} playerRole={playerRole} onMove={useReversiGame(gameData, gameId, playerRole, onWin).makeMove} /> : 
+                );
+            }
+
+            const gameTypeEmoji = { mangala: '🎯', reversi: '⚫', pentago: '🔮' };
+            const gameTypeName = { mangala: 'Mangala', reversi: 'Reversi', pentago: 'Pentago' };
+
+            return (
+                <div className="w-full h-full flex flex-col pc-container glass-card-dark overflow-hidden">
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-4 py-3 bg-white/5 border-b border-white/10">
+                        <div className="flex items-center gap-3">
+                            <span className="text-2xl">{gameTypeEmoji[gameData.type]}</span>
+                            <div>
+                                <div className="font-bold text-white">{gameTypeName[gameData.type]}</div>
+                                <div className="text-xs text-white/50">Masa #{gameId}</div>
+                            </div>
+                        </div>
+                        
+                        {gameData.winner ? (
+                            <div className="status-badge bg-gradient-to-r from-yellow-500 to-orange-500 text-white winner-card">
+                                🏆 {gameData.winner}
+                            </div>
+                        ) : (
+                            <div className={`status-badge ${
+                                ((playerRole === 'P1' && gameData.isP1Turn) || (playerRole === 'P2' && !gameData.isP1Turn)) 
+                                    ? 'status-online' 
+                                    : 'status-waiting'
+                            }`}>
+                                {((playerRole === 'P1' && gameData.isP1Turn) || (playerRole === 'P2' && !gameData.isP1Turn)) 
+                                    ? '🎯 Senin Sıran' 
+                                    : '⏳ Bekle'}
+                            </div>
+                        )}
+                        
+                        <button onClick={onBack} className="w-10 h-10 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition flex items-center justify-center">
+                            <i className="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    {/* Game Area */}
+                    <div className="flex-1 overflow-hidden">
+                        {gameData.type === 'reversi' ? (
+                            <ReversiBoard game={gameData} playerRole={playerRole} onMove={useReversiGame(gameData, gameId, playerRole, onWin).makeMove} />
+                        ) : gameData.type === 'pentago' ? (
+                            <PentagoBoard game={gameData} playerRole={playerRole} onPlace={usePentagoGame(gameData, gameId, playerRole, onWin).placeStone} onRotate={usePentagoGame(gameData, gameId, playerRole, onWin).doRotate} />
+                        ) : (
                             <MangalaBoard game={gameData} playerRole={playerRole} onMove={useMangalaGame(gameData, gameId, playerRole, onWin).moveStone} />
-                        }
+                        )}
                     </div>
                 </div>
             );
         };
 
+        // 🎯 MAIN APP
         const App = () => {
-            const [user, setUser] = useState(null); const [status, setStatus] = useState("loading"); const [gameId, setGameId] = useState(null); const [role, setRole] = useState(null); const [prof, setProf] = useState(false); const [badge, setBadge] = useState(null);
-            useEffect(() => { const uid = localStorage.getItem("az_uid"); if(uid) check(uid); else setStatus("auth"); }, []);
-            const check = (uid) => window.dbGet(window.dbRef(window.db, 'users/'+uid)).then(s => { if(s.exists()){ setUser(s.val()); connect(s.val(), uid); } else window.dbGet(window.dbRef(window.db, 'pending_users/'+uid)).then(p => { if(p.exists()) setStatus("pending"); else { localStorage.removeItem("az_uid"); setStatus("auth"); }}) });
-            const connect = (u, uid) => { const r = window.dbRef(window.db, 'lobby/'+uid); window.dbUpdate(r, { name:u.name, class:u.class, schoolName:u.schoolName, state:'waiting', uid }); window.dbOnDisconnect(r).remove(); setStatus("lobby"); };
-            const login = (sid, no, pass) => { const uid = `${sid}_${no}`; window.dbGet(window.dbRef(window.db, 'users/'+uid)).then(s => { if(s.exists() && s.val().password === pass) { localStorage.setItem("az_uid", uid); setUser(s.val()); connect(s.val(), uid); } else alert("Hata!"); }); };
-            const register = (data) => { const uid = `${data.schoolId}_${data.number}`; window.dbGet(window.dbRef(window.db, 'users/'+uid)).then(s => { if(s.exists()) alert("Kayıtlı!"); else { window.dbSet(window.dbRef(window.db, 'pending_users/'+uid), {...data, badges:[], stats:{wins:0}, joinedAt:Date.now()}); alert("Onay bekleniyor."); setStatus("auth"); } }); };
-            const handleWin = async (type) => { 
-                if(!user) return; const uid = `${user.schoolId}_${user.number}`; const ref = window.dbRef(window.db, 'users/'+uid); const s = await window.dbGet(ref); let u = s.val();
-                u.stats.wins = (u.stats.wins||0)+1; let b = u.badges||[]; let won = null;
-                if(!b.includes("first_win") && u.stats.wins>=1) { b.push("first_win"); won="first_win"; }
-                if(!b.includes("mangala_master") && type==='mangala') { b.push("mangala_master"); won="mangala_master"; }
-                u.badges = b; await window.dbUpdate(ref, u); setUser(u);
-                if(won) { setBadge(BADGES[won]); setTimeout(()=>setBadge(null), 3000); }
-            };
-            useEffect(() => { if(status!=="lobby"||!user)return; const sub = window.dbOnValue(window.dbRef(window.db, 'lobby/'+`${user.schoolId}_${user.number}`), (s)=>{ const d=s.val(); if(d&&d.gameId){ setGameId(d.gameId); setRole(d.role); setStatus("playing"); } }); return ()=>sub(); }, [status, user]);
+            const [user, setUser] = useState(null);
+            const [status, setStatus] = useState("loading");
+            const [gameId, setGameId] = useState(null);
+            const [role, setRole] = useState(null);
+            const [showProfile, setShowProfile] = useState(false);
+            const [badge, setBadge] = useState(null);
 
-            if(status==="loading") return <div className="w-full h-full flex items-center justify-center"><i className="fas fa-circle-notch fa-spin text-4xl text-blue-500"></i></div>;
-            if(status==="auth") return <div className="w-full h-full pc-container flex items-center justify-center"><AuthScreen onLogin={login} onRegister={register} /></div>;
-            if(status==="pending") return <div className="w-full h-full flex flex-col items-center justify-center text-center"><i className="fas fa-clock text-4xl mb-4 text-slate-500 animate-pulse"></i><h2 className="text-xl font-bold">Onay Bekleniyor</h2><button onClick={()=>{localStorage.removeItem("az_uid"); setStatus("auth")}} className="mt-4 px-4 py-2 border border-white/10 rounded text-xs hover:bg-white/5">Geri</button></div>;
+            useEffect(() => {
+                const uid = localStorage.getItem("az_uid");
+                if (uid) checkUser(uid);
+                else setStatus("auth");
+            }, []);
+
+            const checkUser = (uid) => {
+                window.dbGet(window.dbRef(window.db, 'users/' + uid)).then(s => {
+                    if (s.exists()) {
+                        setUser(s.val());
+                        connectToLobby(s.val(), uid);
+                    } else {
+                        window.dbGet(window.dbRef(window.db, 'pending_users/' + uid)).then(p => {
+                            if (p.exists()) setStatus("pending");
+                            else {
+                                localStorage.removeItem("az_uid");
+                                setStatus("auth");
+                            }
+                        });
+                    }
+                });
+            };
+
+            const connectToLobby = (u, uid) => {
+                const r = window.dbRef(window.db, 'lobby/' + uid);
+                window.dbUpdate(r, { name: u.name, class: u.class, schoolName: u.schoolName, state: 'waiting', uid });
+                window.dbOnDisconnect(r).remove();
+                setStatus("lobby");
+            };
+
+            const login = (sid, no, pass) => {
+                const uid = `${sid}_${no}`;
+                window.dbGet(window.dbRef(window.db, 'users/' + uid)).then(s => {
+                    if (s.exists() && s.val().password === pass) {
+                        localStorage.setItem("az_uid", uid);
+                        setUser(s.val());
+                        connectToLobby(s.val(), uid);
+                    } else {
+                        alert("Hatalı bilgi! 😅");
+                    }
+                });
+            };
+
+            const register = (data) => {
+                const uid = `${data.schoolId}_${data.number}`;
+                window.dbGet(window.dbRef(window.db, 'users/' + uid)).then(s => {
+                    if (s.exists()) {
+                        alert("Bu numara zaten kayıtlı! 📚");
+                    } else {
+                        window.dbSet(window.dbRef(window.db, 'pending_users/' + uid), { ...data, badges: [], stats: { wins: 0 }, joinedAt: Date.now() });
+                        alert("Kayıt tamamlandı! Öğretmen onayı bekleniyor. ✅");
+                        setStatus("auth");
+                    }
+                });
+            };
+
+            const handleWin = async (type) => {
+                if (!user) return;
+                createConfetti();
+                const uid = `${user.schoolId}_${user.number}`;
+                const ref = window.dbRef(window.db, 'users/' + uid);
+                const s = await window.dbGet(ref);
+                let u = s.val();
+                
+                // İstatistikleri güncelle
+                if (!u.stats) u.stats = { wins: 0, totalGames: 0, streak: 0, mangalaWins: 0, reversiWins: 0, pentagoWins: 0 };
+                u.stats.wins = (u.stats.wins || 0) + 1;
+                u.stats.totalGames = (u.stats.totalGames || 0) + 1;
+                u.stats.streak = (u.stats.streak || 0) + 1;
+                
+                // Oyun tipine göre galibiyet say
+                if (type === 'mangala') u.stats.mangalaWins = (u.stats.mangalaWins || 0) + 1;
+                if (type === 'reversi') u.stats.reversiWins = (u.stats.reversiWins || 0) + 1;
+                if (type === 'pentago') u.stats.pentagoWins = (u.stats.pentagoWins || 0) + 1;
+                
+                let badges = u.badges || [];
+                let newBadges = [];
+                
+                // 🌟 İlk Zafer
+                if (!badges.includes("first_win") && u.stats.wins >= 1) {
+                    badges.push("first_win");
+                    newBadges.push("first_win");
+                }
+                
+                // 🎯 İlk Adım (ilk oyunu tamamla)
+                if (!badges.includes("first_blood") && u.stats.totalGames >= 1) {
+                    badges.push("first_blood");
+                    newBadges.push("first_blood");
+                }
+                
+                // 🎮 MANGALA ROZETLERİ
+                if (!badges.includes("mangala_novice") && u.stats.mangalaWins >= 3) {
+                    badges.push("mangala_novice");
+                    newBadges.push("mangala_novice");
+                }
+                if (!badges.includes("mangala_master") && u.stats.mangalaWins >= 10) {
+                    badges.push("mangala_master");
+                    newBadges.push("mangala_master");
+                }
+                if (!badges.includes("mangala_legend") && u.stats.mangalaWins >= 25) {
+                    badges.push("mangala_legend");
+                    newBadges.push("mangala_legend");
+                }
+                
+                // 🎮 REVERSİ ROZETLERİ
+                if (!badges.includes("reversi_novice") && u.stats.reversiWins >= 3) {
+                    badges.push("reversi_novice");
+                    newBadges.push("reversi_novice");
+                }
+                if (!badges.includes("reversi_brain") && u.stats.reversiWins >= 10) {
+                    badges.push("reversi_brain");
+                    newBadges.push("reversi_brain");
+                }
+                if (!badges.includes("reversi_genius") && u.stats.reversiWins >= 25) {
+                    badges.push("reversi_genius");
+                    newBadges.push("reversi_genius");
+                }
+                
+                // 🎮 PENTAGO ROZETLERİ
+                if (!badges.includes("pentago_novice") && u.stats.pentagoWins >= 3) {
+                    badges.push("pentago_novice");
+                    newBadges.push("pentago_novice");
+                }
+                if (!badges.includes("pentago_pro") && u.stats.pentagoWins >= 10) {
+                    badges.push("pentago_pro");
+                    newBadges.push("pentago_pro");
+                }
+                if (!badges.includes("pentago_master") && u.stats.pentagoWins >= 25) {
+                    badges.push("pentago_master");
+                    newBadges.push("pentago_master");
+                }
+                
+                // 🔥 SERİ ROZETLERİ
+                if (!badges.includes("streak_3") && u.stats.streak >= 3) {
+                    badges.push("streak_3");
+                    newBadges.push("streak_3");
+                }
+                if (!badges.includes("streak_5") && u.stats.streak >= 5) {
+                    badges.push("streak_5");
+                    newBadges.push("streak_5");
+                }
+                if (!badges.includes("streak_10") && u.stats.streak >= 10) {
+                    badges.push("streak_10");
+                    newBadges.push("streak_10");
+                }
+                
+                // 🏆 TOPLAM GALİBİYET ROZETLERİ
+                if (!badges.includes("wins_5") && u.stats.wins >= 5) {
+                    badges.push("wins_5");
+                    newBadges.push("wins_5");
+                }
+                if (!badges.includes("wins_10") && u.stats.wins >= 10) {
+                    badges.push("wins_10");
+                    newBadges.push("wins_10");
+                }
+                if (!badges.includes("wins_25") && u.stats.wins >= 25) {
+                    badges.push("wins_25");
+                    newBadges.push("wins_25");
+                }
+                if (!badges.includes("wins_50") && u.stats.wins >= 50) {
+                    badges.push("wins_50");
+                    newBadges.push("wins_50");
+                }
+                if (!badges.includes("wins_100") && u.stats.wins >= 100) {
+                    badges.push("wins_100");
+                    newBadges.push("wins_100");
+                }
+                
+                // 🌈 ÇOKLU OYUN ROZETLERİ
+                if (!badges.includes("all_rounder") && 
+                    u.stats.mangalaWins >= 1 && u.stats.reversiWins >= 1 && u.stats.pentagoWins >= 1) {
+                    badges.push("all_rounder");
+                    newBadges.push("all_rounder");
+                }
+                if (!badges.includes("triple_master") && 
+                    u.stats.mangalaWins >= 5 && u.stats.reversiWins >= 5 && u.stats.pentagoWins >= 5) {
+                    badges.push("triple_master");
+                    newBadges.push("triple_master");
+                }
+                if (!badges.includes("ultimate_champion") && 
+                    u.stats.mangalaWins >= 15 && u.stats.reversiWins >= 15 && u.stats.pentagoWins >= 15) {
+                    badges.push("ultimate_champion");
+                    newBadges.push("ultimate_champion");
+                }
+                
+                // 🎓 VETERAN ROZETLERİ
+                if (!badges.includes("veteran") && u.stats.totalGames >= 50) {
+                    badges.push("veteran");
+                    newBadges.push("veteran");
+                }
+                if (!badges.includes("legend") && u.stats.totalGames >= 100) {
+                    badges.push("legend");
+                    newBadges.push("legend");
+                }
+                
+                u.badges = badges;
+                await window.dbUpdate(ref, u);
+                setUser(u);
+                
+                // Yeni rozet bildirimi göster (sırayla)
+                if (newBadges.length > 0) {
+                    for (let i = 0; i < newBadges.length; i++) {
+                        setTimeout(() => {
+                            setBadge(BADGES[newBadges[i]]);
+                            setTimeout(() => setBadge(null), 3500);
+                        }, i * 4000);
+                    }
+                }
+            };
             
+            // Oyun kaybedince seri sıfırla
+            const handleLose = async () => {
+                if (!user) return;
+                const uid = `${user.schoolId}_${user.number}`;
+                const ref = window.dbRef(window.db, 'users/' + uid);
+                await window.dbUpdate(ref, { 'stats/streak': 0, 'stats/totalGames': (user.stats?.totalGames || 0) + 1 });
+            };
+
+            useEffect(() => {
+                if (status !== "lobby" || !user) return;
+                const sub = window.dbOnValue(window.dbRef(window.db, 'lobby/' + `${user.schoolId}_${user.number}`), (s) => {
+                    const d = s.val();
+                    if (d && d.gameId) {
+                        setGameId(d.gameId);
+                        setRole(d.role);
+                        setStatus("playing");
+                    }
+                });
+                return () => sub();
+            }, [status, user]);
+
+            // Loading Screen
+            if (status === "loading") {
+                return (
+                    <div className="w-full h-full flex flex-col items-center justify-center">
+                        <div className="text-8xl mb-6 bounce">🎮</div>
+                        <h1 className="text-3xl font-bold rainbow-text mb-4">AKIL ZEKA</h1>
+                        <div className="flex gap-2">
+                            <div className="w-3 h-3 rounded-full bg-white animate-bounce" style={{ animationDelay: '0s' }}></div>
+                            <div className="w-3 h-3 rounded-full bg-white animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                            <div className="w-3 h-3 rounded-full bg-white animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // Auth Screen
+            if (status === "auth") {
+                return (
+                    <div className="w-full h-full pc-container">
+                        <AuthScreen onLogin={login} onRegister={register} />
+                    </div>
+                );
+            }
+
+            // Pending Screen
+            if (status === "pending") {
+                return (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-center p-4">
+                        <div className="glass-card p-8 max-w-sm pop-in">
+                            <div className="text-6xl mb-4 wave">⏳</div>
+                            <h2 className="text-2xl font-bold text-white mb-2">Onay Bekleniyor</h2>
+                            <p className="text-white/60 mb-6">Öğretmenin kaydını onaylamasını bekle!</p>
+                            <button 
+                                onClick={() => { localStorage.removeItem("az_uid"); setStatus("auth"); }}
+                                className="btn-fun btn-primary"
+                            >
+                                🔙 Geri Dön
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
             return (
                 <div className="w-full h-full flex items-center justify-center">
-                    {badge && <div className="fixed inset-0 z-[200] flex items-center justify-center pointer-events-none"><div className="glass-box p-8 rounded-full text-center anim-pop"><div className="text-6xl mb-2">{badge.icon}</div><div className="text-xl font-bold text-yellow-400">{badge.name}</div></div></div>}
-                    {prof && <ProfileModal user={user} onClose={()=>setProf(false)} onLogout={()=>{if(confirm("Çıkış?")){window.dbRemove(window.dbRef(window.db, 'lobby/'+`${user.schoolId}_${user.number}`)); localStorage.removeItem("az_uid"); setStatus("auth"); setProf(false);}}} />}
-                    
-                    {status==="lobby" && (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-center p-4 relative pc-container">
-                            <button onClick={()=>setProf(true)} className="absolute top-6 right-6 flex items-center gap-2 bg-slate-800/80 px-4 py-2 rounded-full border border-white/10 hover:bg-slate-700 transition cursor-pointer z-50">
-                                <i className="fas fa-user-astronaut text-blue-400"></i> <span className="text-xs font-bold text-white">{user.name.split(' ')[0]}</span>
-                            </button>
-                            <div className="glass-box p-10 rounded-3xl w-full max-w-md anim-pop relative overflow-hidden">
-                                <div className="w-24 h-24 mx-auto bg-slate-900 rounded-full flex items-center justify-center text-5xl mb-6 shadow-inner border border-white/5 animate-pulse">🎮</div>
-                                <h2 className="text-2xl font-bold mb-1 text-white">Rakip Aranıyor...</h2>
-                                <p className="text-slate-500 text-xs mb-8 tracking-wider">{user.schoolName}</p>
-                                <div className="inline-flex items-center gap-3 px-6 py-2 bg-blue-500/10 text-blue-400 rounded-full border border-blue-500/20 text-[10px] font-bold tracking-widest"><span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-ping"></span> LOBİYE BAĞLANDI</div>
+                    {/* Badge Notification - Geliştirilmiş */}
+                    {badge && (
+                        <div className="fixed inset-0 z-[200] flex items-center justify-center pointer-events-none">
+                            <div className="relative">
+                                {/* Arka plan efekti */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 rounded-3xl blur-3xl opacity-50 animate-pulse scale-150"></div>
+                                
+                                {/* Ana kart */}
+                                <div className="glass-card p-8 text-center pop-in relative overflow-hidden">
+                                    {/* Parıltı efekti */}
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 animate-pulse"></div>
+                                    
+                                    {/* İçerik */}
+                                    <div className="relative">
+                                        <div className="text-xs text-white/60 font-bold mb-2">✨ YENİ ROZET KAZANDIN! ✨</div>
+                                        <div className="w-24 h-24 mx-auto mb-4 rounded-2xl flex items-center justify-center text-6xl bounce" 
+                                             style={{ background: `linear-gradient(135deg, ${badge.color}40, ${badge.color}80)`, border: `3px solid ${badge.color}` }}>
+                                            {badge.icon}
+                                        </div>
+                                        <div className="text-2xl font-bold text-white mb-2">{badge.name}</div>
+                                        <div className="text-sm text-white/60">{badge.desc}</div>
+                                        <div className="mt-3 inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold"
+                                             style={{ background: `${badge.color}30`, color: badge.color }}>
+                                            {badge.rarity && RARITY_NAMES[badge.rarity]}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
 
-                    {status==="playing" && <GameShell gameId={gameId} playerRole={role} onWin={handleWin} onBack={()=>{setStatus("lobby"); setGameId(null); window.dbUpdate(window.dbRef(window.db, 'lobby/'+`${user.schoolId}_${user.number}`), {state:'waiting', gameId:null}); }} />}
+                    {/* Profile Modal */}
+                    {showProfile && (
+                        <ProfileModal 
+                            user={user} 
+                            onClose={() => setShowProfile(false)} 
+                            onLogout={() => {
+                                if (confirm("Çıkış yapmak istediğine emin misin? 🤔")) {
+                                    window.dbRemove(window.dbRef(window.db, 'lobby/' + `${user.schoolId}_${user.number}`));
+                                    localStorage.removeItem("az_uid");
+                                    setStatus("auth");
+                                    setShowProfile(false);
+                                }
+                            }}
+                        />
+                    )}
+
+                    {/* Lobby */}
+                    {status === "lobby" && (
+                        <div className="w-full h-full flex flex-col items-center justify-center p-4 pc-container relative">
+                            {/* Profile Button */}
+                            <button 
+                                onClick={() => setShowProfile(true)}
+                                className="absolute top-6 right-6 glass-card px-4 py-2 flex items-center gap-2 hover:bg-white/20 transition cursor-pointer z-50"
+                            >
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
+                                    {user.name.charAt(0)}
+                                </div>
+                                <span className="font-bold text-white hidden sm:block">{user.name.split(' ')[0]}</span>
+                            </button>
+
+                            {/* Lobby Card */}
+                            <div className="glass-card p-10 max-w-md w-full text-center pop-in">
+                                <div className="text-8xl mb-6 bounce">🎮</div>
+                                <h2 className="text-3xl font-bold text-white mb-2">Rakip Aranıyor</h2>
+                                <p className="text-white/60 mb-6">{user.schoolName}</p>
+                                
+                                <div className="flex justify-center gap-4 mb-8">
+                                    <div className="w-4 h-4 rounded-full bg-purple-500 animate-bounce" style={{ animationDelay: '0s' }}></div>
+                                    <div className="w-4 h-4 rounded-full bg-pink-500 animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                                    <div className="w-4 h-4 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                                </div>
+
+                                <div className="status-badge status-online mx-auto">
+                                    <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                                    Lobiye Bağlandı
+                                </div>
+                            </div>
+
+                            {/* Fun Info */}
+                            <div className="mt-8 text-center">
+                                <p className="text-white/40 text-sm">
+                                    💡 Öğretmenin turnuvayı başlatmasını bekle!
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Playing */}
+                    {status === "playing" && (
+                        <GameShell 
+                            gameId={gameId} 
+                            playerRole={role} 
+                            onWin={handleWin}
+                            onBack={() => {
+                                setStatus("lobby");
+                                setGameId(null);
+                                window.dbUpdate(window.dbRef(window.db, 'lobby/' + `${user.schoolId}_${user.number}`), { state: 'waiting', gameId: null });
+                            }}
+                        />
+                    )}
                 </div>
             );
         };
-        const root = ReactDOM.createRoot(document.getElementById('root')); root.render(<App />);
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
