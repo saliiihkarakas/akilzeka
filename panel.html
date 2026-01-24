@@ -895,6 +895,7 @@
             const [isLoading, setIsLoading] = useState(true);
             const [toast, setToast] = useState(null);
             const [operationInProgress, setOperationInProgress] = useState(false);
+            const [loginError, setLoginError] = useState("");
             
             // 🏆 Rozet Yönetimi State
             const [badgeModalUser, setBadgeModalUser] = useState(null);
@@ -1391,17 +1392,48 @@
                             <h1 className="text-3xl font-bold rainbow-text mb-2">YÖNETİCİ PANELİ</h1>
                             <p className="text-white/60 text-sm mb-8">Akıl Zeka Oyunları Turnuva Yönetimi</p>
                             
+                            {loginError && (
+                                <div className="bg-red-500/20 border-2 border-red-500 text-red-200 px-4 py-3 rounded-xl mb-4 flex items-center gap-2">
+                                    <i className="fas fa-exclamation-triangle"></i>
+                                    <span className="font-bold">{loginError}</span>
+                                </div>
+                            )}
+                            
                             <input
                                 type="password"
                                 value={password}
-                                onChange={e => setPassword(e.target.value)}
-                                onKeyPress={e => e.key === 'Enter' && password === "1234" && setIsLoggedIn(true)}
+                                onChange={e => {
+                                    setPassword(e.target.value);
+                                    setLoginError(""); // Kullanıcı yazmaya başladığında hatayı temizle
+                                }}
+                                onKeyDown={e => {
+                                    if (e.key === 'Enter') {
+                                        if (password === "1234") {
+                                            setLoginError("");
+                                            console.log("✅ Giriş başarılı!");
+                                            setIsLoggedIn(true);
+                                        } else if (password) {
+                                            setLoginError("❌ Yanlış şifre! Tekrar deneyin.");
+                                        }
+                                    }
+                                }}
                                 className="input-fun w-full text-center mb-4"
                                 placeholder="🔒 Şifre"
+                                autoFocus
                             />
                             
                             <button
-                                onClick={() => password === "1234" && setIsLoggedIn(true)}
+                                onClick={() => {
+                                    if (password === "1234") {
+                                        setLoginError("");
+                                        console.log("✅ Giriş başarılı!");
+                                        setIsLoggedIn(true);
+                                    } else if (password) {
+                                        setLoginError("❌ Yanlış şifre! Tekrar deneyin.");
+                                    } else {
+                                        setLoginError("⚠️ Lütfen şifre girin.");
+                                    }
+                                }}
                                 className="btn-candy btn-purple w-full"
                             >
                                 <i className="fas fa-sign-in-alt mr-2"></i> Giriş Yap
