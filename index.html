@@ -32,7 +32,115 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        window.db = db; window.dbRef = ref; window.dbSet = set; window.dbOnValue = onValue; window.dbUpdate = update; window.dbOnDisconnect = onDisconnect; window.dbGet = get; window.dbRemove = remove;
+        
+        // 🔌 Connection State Monitoring
+        const connectedRef = ref(db, '.info/connected');
+        window.isFirebaseConnected = false;
+        onValue(connectedRef, (snap) => {
+            window.isFirebaseConnected = snap.val() === true;
+            window.dispatchEvent(new CustomEvent('firebase-connection', { detail: snap.val() }));
+        });
+        
+        // 📦 Offline Operation Queue
+        window.pendingOperations = [];
+        window.processingQueue = false;
+        
+        const processOfflineQueue = async () => {
+            if (window.processingQueue || !window.isFirebaseConnected) return;
+            window.processingQueue = true;
+            
+            while (window.pendingOperations.length > 0 && window.isFirebaseConnected) {
+                const op = window.pendingOperations.shift();
+                try {
+                    await op.execute();
+                } catch (error) {
+                    console.error('Offline operation failed:', error);
+                    if (op.critical) {
+                        window.pendingOperations.unshift(op);
+                        break;
+                    }
+                }
+            }
+            window.processingQueue = false;
+        };
+        
+        // 🔄 Safe Firebase Operations with Timeout & Retry
+        const safeDbSet = async (refPath, data, retries = 3) => {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Set timeout')), 10000)
+                    );
+                    await Promise.race([set(refPath, data), timeoutPromise]);
+                    return true;
+                } catch (error) {
+                    if (i === retries - 1) {
+                        console.error('Firebase Set Failed:', error);
+                        return false;
+                    }
+                    await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+                }
+            }
+            return false;
+        };
+        
+        const safeDbUpdate = async (refPath, data, retries = 3) => {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Update timeout')), 10000)
+                    );
+                    await Promise.race([update(refPath, data), timeoutPromise]);
+                    return true;
+                } catch (error) {
+                    if (i === retries - 1) {
+                        console.error('Firebase Update Failed:', error);
+                        return false;
+                    }
+                    await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+                }
+            }
+            return false;
+        };
+        
+        const safeDbRemove = async (refPath, retries = 3) => {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Remove timeout')), 10000)
+                    );
+                    await Promise.race([remove(refPath), timeoutPromise]);
+                    return true;
+                } catch (error) {
+                    if (i === retries - 1) {
+                        console.error('Firebase Remove Failed:', error);
+                        return false;
+                    }
+                    await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+                }
+            }
+            return false;
+        };
+        
+        window.db = db; 
+        window.dbRef = ref; 
+        window.dbSet = safeDbSet; 
+        window.dbOnValue = onValue; 
+        window.dbUpdate = safeDbUpdate; 
+        window.dbOnDisconnect = onDisconnect; 
+        window.dbGet = get; 
+        window.dbRemove = safeDbRemove;
+        window.processOfflineQueue = processOfflineQueue;
+        
+        // ⚠️ Global Error Handlers
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('Unhandled Promise Rejection:', event.reason);
+            event.preventDefault();
+        });
+        
+        window.addEventListener('error', (event) => {
+            console.error('Global Error:', event.error);
+        });
     </script>
 
     <style>
@@ -42,8 +150,15 @@
             width: 100%; height: 100%; margin: 0; padding: 0;
             overflow: hidden; 
             font-family: 'Fredoka', 'Baloo 2', sans-serif;
-            touch-action: none;
-            -webkit-user-select: none; user-select: none;
+            -webkit-overflow-scrolling: touch;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none; 
+            user-select: none;
+        }
+        
+        /* 🎮 Game boards should allow touch for interactions */
+        .game-board, .pit, button, input, select {
+            touch-action: manipulation;
         }
 
         /* 🌈 MAGICAL ANIMATED BACKGROUND */
@@ -160,6 +275,7 @@
                         0 2px 5px rgba(255,255,255,0.1);
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
         }
         .pit:hover {
             transform: scale(1.05);
@@ -175,6 +291,37 @@
         @keyframes pulseGlow {
             0%, 100% { box-shadow: inset 0 4px 15px rgba(0,0,0,0.6), 0 0 10px rgba(46, 213, 115, 0.5); }
             50% { box-shadow: inset 0 4px 15px rgba(0,0,0,0.6), 0 0 30px rgba(46, 213, 115, 0.8); }
+        }
+        
+        /* 📱 Mobile Performance Optimizations */
+        @media (max-width: 768px) {
+            .glass-card {
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+            }
+            
+            .glass-card-dark {
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+            }
+            
+            /* Reduce particle animations on mobile */
+            .particle {
+                animation-duration: 30s;
+            }
+            
+            .star {
+                animation-duration: 3s;
+            }
+        }
+        
+        /* ⚡ Reduced Motion Support */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
         }
 
         /* 🔮 MARBLE STONES */
@@ -1202,10 +1349,23 @@
 
             useEffect(() => {
                 if (window.dbRef) {
-                    window.dbOnValue(window.dbRef(window.db, 'schools'), (snap) => {
-                        const val = snap.val();
-                        if (val) setSchools(Object.values(val));
-                    });
+                    const unsubscribe = window.dbOnValue(
+                        window.dbRef(window.db, 'schools'), 
+                        (snap) => {
+                            try {
+                                const val = snap.val();
+                                if (val) setSchools(Object.values(val));
+                            } catch (err) {
+                                console.error('Schools data processing error:', err);
+                            }
+                        },
+                        (error) => {
+                            console.error('Schools listener error:', error);
+                        }
+                    );
+                    return () => {
+                        if (typeof unsubscribe === 'function') unsubscribe();
+                    };
                 }
             }, []);
 
@@ -1320,8 +1480,22 @@
             const [showQuitNotice, setShowQuitNotice] = useState(false);
 
             useEffect(() => {
-                const sub = window.dbOnValue(window.dbRef(window.db, 'games/' + gameId), (s) => setGameData(s.val()));
-                return () => sub();
+                const unsubscribe = window.dbOnValue(
+                    window.dbRef(window.db, 'games/' + gameId), 
+                    (s) => {
+                        try {
+                            setGameData(s.val());
+                        } catch (err) {
+                            console.error('Game data processing error:', err);
+                        }
+                    },
+                    (error) => {
+                        console.error('Game listener error:', error);
+                    }
+                );
+                return () => {
+                    if (typeof unsubscribe === 'function') unsubscribe();
+                };
             }, [gameId]);
 
             useEffect(() => {
@@ -1430,77 +1604,124 @@
                 else setStatus("auth");
             }, []);
 
-            const checkUser = (uid) => {
-                window.dbGet(window.dbRef(window.db, 'users/' + uid)).then(s => {
+            const checkUser = async (uid) => {
+                try {
+                    const s = await window.dbGet(window.dbRef(window.db, 'users/' + uid));
                     if (s.exists()) {
                         setUser(s.val());
                         connectToLobby(s.val(), uid);
                     } else {
-                        window.dbGet(window.dbRef(window.db, 'pending_users/' + uid)).then(p => {
-                            if (p.exists()) setStatus("pending");
-                            else {
-                                localStorage.removeItem("az_uid");
-                                setStatus("auth");
-                            }
-                        });
+                        const p = await window.dbGet(window.dbRef(window.db, 'pending_users/' + uid));
+                        if (p.exists()) {
+                            setStatus("pending");
+                        } else {
+                            localStorage.removeItem("az_uid");
+                            setStatus("auth");
+                        }
                     }
-                });
+                } catch (error) {
+                    console.error('Check user error:', error);
+                    localStorage.removeItem("az_uid");
+                    setStatus("auth");
+                }
             };
 
-            const connectToLobby = (u, uid) => {
-                const r = window.dbRef(window.db, 'lobby/' + uid);
-                window.dbUpdate(r, { name: u.name, class: u.class, schoolName: u.schoolName, state: 'waiting', uid });
-                window.dbOnDisconnect(r).remove();
-                setStatus("lobby");
+            const connectToLobby = async (u, uid) => {
+                try {
+                    const r = window.dbRef(window.db, 'lobby/' + uid);
+                    const success = await window.dbUpdate(r, { 
+                        name: u.name, 
+                        class: u.class, 
+                        schoolName: u.schoolName, 
+                        state: 'waiting', 
+                        uid 
+                    });
+                    if (success) {
+                        window.dbOnDisconnect(r).remove();
+                        setStatus("lobby");
+                    } else {
+                        console.error('Failed to connect to lobby');
+                        setStatus("auth");
+                    }
+                } catch (error) {
+                    console.error('Connect to lobby error:', error);
+                    setStatus("auth");
+                }
             };
 
-            const login = (sid, no, pass) => {
-                const uid = `${sid}_${no}`;
-                window.dbGet(window.dbRef(window.db, 'users/' + uid)).then(s => {
+            const login = async (sid, no, pass) => {
+                try {
+                    const uid = `${sid}_${no}`;
+                    const s = await window.dbGet(window.dbRef(window.db, 'users/' + uid));
                     if (s.exists() && s.val().password === pass) {
                         localStorage.setItem("az_uid", uid);
                         setUser(s.val());
                         connectToLobby(s.val(), uid);
                     } else {
-                        alert("Hatalı bilgi! 😅");
+                        alert("❗ Hatalı bilgi! 😅");
                     }
-                });
+                } catch (error) {
+                    console.error('Login error:', error);
+                    alert('❌ Giriş başarısız! Lütfen tekrar deneyin.');
+                }
             };
 
-            const register = (data) => {
-                const uid = `${data.schoolId}_${data.number}`;
-                window.dbGet(window.dbRef(window.db, 'users/' + uid)).then(s => {
+            const register = async (data) => {
+                try {
+                    const uid = `${data.schoolId}_${data.number}`;
+                    const s = await window.dbGet(window.dbRef(window.db, 'users/' + uid));
                     if (s.exists()) {
-                        alert("Bu numara zaten kayıtlı! 📚");
+                        alert("❗ Bu numara zaten kayıtlı! 📚");
                     } else {
-                        window.dbSet(window.dbRef(window.db, 'pending_users/' + uid), { ...data, badges: [], stats: { wins: 0 }, joinedAt: Date.now() });
-                        alert("Kayıt tamamlandı! Öğretmen onayı bekleniyor. ✅");
-                        setStatus("auth");
+                        const pending = await window.dbGet(window.dbRef(window.db, 'pending_users/' + uid));
+                        if (pending.exists()) {
+                            alert("❗ Bu kayıt zaten onay bekliyor!");
+                            return;
+                        }
+                        const success = await window.dbSet(
+                            window.dbRef(window.db, 'pending_users/' + uid), 
+                            { ...data, badges: [], stats: { wins: 0 }, joinedAt: Date.now() }
+                        );
+                        if (success) {
+                            alert("✅ Kayıt tamamlandı! Öğretmen onayı bekleniyor. ✅");
+                            setStatus("auth");
+                        } else {
+                            alert('❌ Kayıt başarısız! Lütfen tekrar deneyin.');
+                        }
                     }
-                });
+                } catch (error) {
+                    console.error('Register error:', error);
+                    alert('❌ Kayıt sırasında hata oluştu! Lütfen tekrar deneyin.');
+                }
             };
 
             const handleWin = async (type) => {
                 if (!user) return;
-                createConfetti();
-                const uid = `${user.schoolId}_${user.number}`;
-                const ref = window.dbRef(window.db, 'users/' + uid);
-                const s = await window.dbGet(ref);
-                let u = s.val();
-                
-                // İstatistikleri güncelle
-                if (!u.stats) u.stats = { wins: 0, totalGames: 0, streak: 0, mangalaWins: 0, reversiWins: 0, pentagoWins: 0 };
-                u.stats.wins = (u.stats.wins || 0) + 1;
-                u.stats.totalGames = (u.stats.totalGames || 0) + 1;
-                u.stats.streak = (u.stats.streak || 0) + 1;
-                
-                // Oyun tipine göre galibiyet say
-                if (type === 'mangala') u.stats.mangalaWins = (u.stats.mangalaWins || 0) + 1;
-                if (type === 'reversi') u.stats.reversiWins = (u.stats.reversiWins || 0) + 1;
-                if (type === 'pentago') u.stats.pentagoWins = (u.stats.pentagoWins || 0) + 1;
-                
-                let badges = u.badges || [];
-                let newBadges = [];
+                try {
+                    createConfetti();
+                    const uid = `${user.schoolId}_${user.number}`;
+                    const ref = window.dbRef(window.db, 'users/' + uid);
+                    const s = await window.dbGet(ref);
+                    if (!s.exists()) {
+                        console.error('User not found in database');
+                        return;
+                    }
+                    
+                    let u = s.val();
+                    
+                    // İstatistikleri güncelle
+                    if (!u.stats) u.stats = { wins: 0, totalGames: 0, streak: 0, mangalaWins: 0, reversiWins: 0, pentagoWins: 0 };
+                    u.stats.wins = (u.stats.wins || 0) + 1;
+                    u.stats.totalGames = (u.stats.totalGames || 0) + 1;
+                    u.stats.streak = (u.stats.streak || 0) + 1;
+                    
+                    // Oyun tipine göre galibiyet say
+                    if (type === 'mangala') u.stats.mangalaWins = (u.stats.mangalaWins || 0) + 1;
+                    if (type === 'reversi') u.stats.reversiWins = (u.stats.reversiWins || 0) + 1;
+                    if (type === 'pentago') u.stats.pentagoWins = (u.stats.pentagoWins || 0) + 1;
+                    
+                    let badges = u.badges || [];
+                    let newBadges = [];
                 
                 // 🌟 İlk Zafer
                 if (!badges.includes("first_win") && u.stats.wins >= 1) {
@@ -1620,39 +1841,68 @@
                 }
                 
                 u.badges = badges;
-                await window.dbUpdate(ref, u);
-                setUser(u);
-                
-                // Yeni rozet bildirimi göster (sırayla)
-                if (newBadges.length > 0) {
-                    for (let i = 0; i < newBadges.length; i++) {
-                        setTimeout(() => {
-                            setBadge(BADGES[newBadges[i]]);
-                            setTimeout(() => setBadge(null), 3500);
-                        }, i * 4000);
+                const success = await window.dbUpdate(ref, u);
+                if (success) {
+                    setUser(u);
+                    
+                    // Yeni rozet bildirimi göster (sırayla)
+                    if (newBadges.length > 0) {
+                        for (let i = 0; i < newBadges.length; i++) {
+                            setTimeout(() => {
+                                setBadge(BADGES[newBadges[i]]);
+                                setTimeout(() => setBadge(null), 3500);
+                            }, i * 4000);
+                        }
                     }
+                } else {
+                    console.error('Failed to update user stats');
+                }
+                } catch (error) {
+                    console.error('Handle win error:', error);
                 }
             };
             
             // Oyun kaybedince seri sıfırla
             const handleLose = async () => {
                 if (!user) return;
-                const uid = `${user.schoolId}_${user.number}`;
-                const ref = window.dbRef(window.db, 'users/' + uid);
-                await window.dbUpdate(ref, { 'stats/streak': 0, 'stats/totalGames': (user.stats?.totalGames || 0) + 1 });
+                try {
+                    const uid = `${user.schoolId}_${user.number}`;
+                    const ref = window.dbRef(window.db, 'users/' + uid);
+                    const success = await window.dbUpdate(ref, { 
+                        'stats/streak': 0, 
+                        'stats/totalGames': (user.stats?.totalGames || 0) + 1 
+                    });
+                    if (!success) {
+                        console.error('Failed to update loss stats');
+                    }
+                } catch (error) {
+                    console.error('Handle lose error:', error);
+                }
             };
 
             useEffect(() => {
                 if (status !== "lobby" || !user) return;
-                const sub = window.dbOnValue(window.dbRef(window.db, 'lobby/' + `${user.schoolId}_${user.number}`), (s) => {
-                    const d = s.val();
-                    if (d && d.gameId) {
-                        setGameId(d.gameId);
-                        setRole(d.role);
-                        setStatus("playing");
+                const unsubscribe = window.dbOnValue(
+                    window.dbRef(window.db, 'lobby/' + `${user.schoolId}_${user.number}`), 
+                    (s) => {
+                        try {
+                            const d = s.val();
+                            if (d && d.gameId) {
+                                setGameId(d.gameId);
+                                setRole(d.role);
+                                setStatus("playing");
+                            }
+                        } catch (err) {
+                            console.error('Lobby data processing error:', err);
+                        }
+                    },
+                    (error) => {
+                        console.error('Lobby listener error:', error);
                     }
-                });
-                return () => sub();
+                );
+                return () => {
+                    if (typeof unsubscribe === 'function') unsubscribe();
+                };
             }, [status, user]);
 
             // Loading Screen
@@ -1736,12 +1986,23 @@
                         <ProfileModal 
                             user={user} 
                             onClose={() => setShowProfile(false)} 
-                            onLogout={() => {
+                            onLogout={async () => {
                                 if (confirm("Çıkış yapmak istediğine emin misin? 🤔")) {
-                                    window.dbRemove(window.dbRef(window.db, 'lobby/' + `${user.schoolId}_${user.number}`));
-                                    localStorage.removeItem("az_uid");
-                                    setStatus("auth");
-                                    setShowProfile(false);
+                                    try {
+                                        const success = await window.dbRemove(
+                                            window.dbRef(window.db, 'lobby/' + `${user.schoolId}_${user.number}`)
+                                        );
+                                        if (!success) {
+                                            console.error('Failed to remove from lobby');
+                                        }
+                                    } catch (e) {
+                                        console.error('Logout error:', e);
+                                    } finally {
+                                        // Her durumda çıkış yap
+                                        localStorage.removeItem("az_uid");
+                                        setStatus("auth");
+                                        setShowProfile(false);
+                                    }
                                 }
                             }}
                         />
@@ -1806,12 +2067,15 @@
                                             if (!gameData.winner) {
                                                 const winnerName = role === 'P1' ? gameData.players.p2.name : gameData.players.p1.name;
                                                 const quitterName = role === 'P1' ? gameData.players.p1.name : gameData.players.p2.name;
-                                                await window.dbUpdate(window.dbRef(window.db, 'games/' + gameId), { 
+                                                const success = await window.dbUpdate(window.dbRef(window.db, 'games/' + gameId), { 
                                                     winner: winnerName,
                                                     endReason: 'quit',
                                                     quitter: quitterName,
                                                     endedAt: Date.now()
                                                 });
+                                                if (!success) {
+                                                    console.error('Failed to update game on quit');
+                                                }
                                                 // Çıkan oyuncunun seri skorunu sıfırla (kaybetti sayılır)
                                                 await handleLose();
                                             }
@@ -1820,10 +2084,26 @@
                                         console.error('Oyun iptal edilirken hata:', e);
                                     }
                                 }
-                                setStatus("lobby");
-                                setGameId(null);
-                                setRole(null);
-                                window.dbUpdate(window.dbRef(window.db, 'lobby/' + `${user.schoolId}_${user.number}`), { state: 'waiting', gameId: null, role: null });
+                                
+                                // Lobiye geri dön
+                                try {
+                                    setStatus("lobby");
+                                    setGameId(null);
+                                    setRole(null);
+                                    const success = await window.dbUpdate(
+                                        window.dbRef(window.db, 'lobby/' + `${user.schoolId}_${user.number}`), 
+                                        { state: 'waiting', gameId: null, role: null }
+                                    );
+                                    if (!success) {
+                                        console.error('Failed to reset lobby state');
+                                    }
+                                } catch (e) {
+                                    console.error('Lobiye dönüş hatası:', e);
+                                    // En azından UI state'i güncelle
+                                    setStatus("lobby");
+                                    setGameId(null);
+                                    setRole(null);
+                                }
                             }}
                         />
                     )}

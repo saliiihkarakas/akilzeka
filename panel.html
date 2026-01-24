@@ -2,7 +2,10 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>🎯 Turnuva Yönetim Paneli - Akıl Zeka</title>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
     
@@ -36,10 +39,13 @@
             window.dispatchEvent(new CustomEvent('firebase-connection', { detail: snap.val() }));
         });
         
-        // 📊 Firebase işlemlerini sarmalayan error handler
-        const safeDbOperation = async (operation, fallbackValue = null) => {
+        // 📊 Firebase işlemlerini sarmalayan error handler with timeout
+        const safeDbOperation = async (operation, fallbackValue = null, timeout = 10000) => {
             try {
-                return await operation();
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('İşlem zaman aşımına uğradı')), timeout)
+                );
+                return await Promise.race([operation(), timeoutPromise]);
             } catch (error) {
                 console.error('Firebase Error:', error);
                 window.dispatchEvent(new CustomEvent('firebase-error', { detail: error.message }));
@@ -47,11 +53,14 @@
             }
         };
         
-        // 🔄 Retry mekanizması ile güvenli yazma
+        // 🔄 Retry mekanizması ile güvenli yazma with timeout
         const safeDbSet = async (refPath, data, retries = 3) => {
             for (let i = 0; i < retries; i++) {
                 try {
-                    await set(refPath, data);
+                    const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Set işlemi zaman aşımına uğradı')), 10000)
+                    );
+                    await Promise.race([set(refPath, data), timeoutPromise]);
                     return true;
                 } catch (error) {
                     if (i === retries - 1) {
@@ -67,7 +76,10 @@
         const safeDbUpdate = async (refPath, data, retries = 3) => {
             for (let i = 0; i < retries; i++) {
                 try {
-                    await update(refPath, data);
+                    const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Update işlemi zaman aşımına uğradı')), 10000)
+                    );
+                    await Promise.race([update(refPath, data), timeoutPromise]);
                     return true;
                 } catch (error) {
                     if (i === retries - 1) {
@@ -83,7 +95,10 @@
         const safeDbRemove = async (refPath, retries = 3) => {
             for (let i = 0; i < retries; i++) {
                 try {
-                    await remove(refPath);
+                    const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Remove işlemi zaman aşımına uğradı')), 10000)
+                    );
+                    await Promise.race([remove(refPath), timeoutPromise]);
                     return true;
                 } catch (error) {
                     if (i === retries - 1) {
@@ -96,6 +111,42 @@
             }
         };
         
+        // 📦 Offline Operation Queue
+        window.pendingOperations = [];
+        window.processingQueue = false;
+        
+        const processOfflineQueue = async () => {
+            if (window.processingQueue || !window.isFirebaseConnected) return;
+            window.processingQueue = true;
+            
+            while (window.pendingOperations.length > 0 && window.isFirebaseConnected) {
+                const op = window.pendingOperations.shift();
+                try {
+                    await op.execute();
+                    console.log('Offline operation processed:', op.type);
+                } catch (error) {
+                    console.error('Failed to process offline operation:', error);
+                    // Re-queue if critical
+                    if (op.critical) {
+                        window.pendingOperations.unshift(op);
+                        break;
+                    }
+                }
+            }
+            window.processingQueue = false;
+        };
+        
+        // Auto-process queue when connection restored
+        onValue(connectedRef, (snap) => {
+            const wasConnected = window.isFirebaseConnected;
+            window.isFirebaseConnected = snap.val() === true;
+            window.dispatchEvent(new CustomEvent('firebase-connection', { detail: snap.val() }));
+            
+            if (!wasConnected && window.isFirebaseConnected) {
+                setTimeout(processOfflineQueue, 1000); // Small delay for stability
+            }
+        });
+        
         window.db = db;
         window.dbRef = ref;
         window.dbSet = safeDbSet;
@@ -106,6 +157,25 @@
         window.dbLimitToLast = limitToLast;
         window.dbOrderByChild = orderByChild;
         window.dbGet = get;
+        window.processOfflineQueue = processOfflineQueue;
+        
+        // ⚠️ Global Error Handlers
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('Unhandled Promise Rejection:', event.reason);
+            window.dispatchEvent(new CustomEvent('firebase-error', { 
+                detail: 'Beklenmeyen bir hata oluştu: ' + (event.reason?.message || 'Bilinmeyen hata') 
+            }));
+            event.preventDefault();
+        });
+        
+        window.addEventListener('error', (event) => {
+            console.error('Global Error:', event.error);
+            if (event.error?.message?.includes('Firebase')) {
+                window.dispatchEvent(new CustomEvent('firebase-error', { 
+                    detail: event.error.message 
+                }));
+            }
+        });
     </script>
 
     <style>
@@ -115,6 +185,9 @@
             margin: 0; padding: 0;
             font-family: 'Fredoka', 'Baloo 2', sans-serif;
             min-height: 100vh;
+            -webkit-overflow-scrolling: touch;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
 
         /* 🌈 FUN GRADIENT BACKGROUND */
@@ -172,6 +245,10 @@
             overflow: hidden;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             box-shadow: 0 6px 0 rgba(0,0,0,0.15), 0 8px 20px rgba(0,0,0,0.2);
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
         }
         .btn-candy:hover {
             transform: translateY(-3px);
@@ -180,6 +257,43 @@
         .btn-candy:active {
             transform: translateY(2px);
             box-shadow: 0 2px 0 rgba(0,0,0,0.15), 0 4px 10px rgba(0,0,0,0.2);
+        }
+        
+        /* 📱 Mobile Performance Optimizations */
+        @media (max-width: 768px) {
+            .btn-candy {
+                padding: 12px 20px;
+                font-size: 0.9rem;
+            }
+            
+            .glass-card {
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+            }
+            
+            /* Reduce animations on mobile for better performance */
+            @media (prefers-reduced-motion: reduce) {
+                *, *::before, *::after {
+                    animation-duration: 0.01ms !important;
+                    animation-iteration-count: 1 !important;
+                    transition-duration: 0.01ms !important;
+                }
+            }
+        }
+        
+        /* ⚡ Shimmer Loading Animation */
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        .shimmer {
+            background: linear-gradient(90deg, 
+                rgba(255,255,255,0.1) 0%, 
+                rgba(255,255,255,0.3) 50%, 
+                rgba(255,255,255,0.1) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
         }
 
         .btn-purple { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
@@ -480,17 +594,32 @@
             );
         };
 
-        // 🔄 Connection Status Component
-        const ConnectionStatus = ({ isConnected, isLoading }) => (
-            <div className={`fixed bottom-4 right-4 z-50 flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm transition-all ${
-                isLoading ? 'bg-yellow-500 text-yellow-900' :
-                isConnected ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 
-                'bg-red-500 text-white animate-pulse'
-            }`}>
-                <div className={`w-2 h-2 rounded-full ${isLoading ? 'bg-yellow-900' : isConnected ? 'bg-green-400' : 'bg-white'}`}></div>
-                {isLoading ? 'Yükleniyor...' : isConnected ? 'Bağlı' : 'Bağlantı Kesildi!'}
-            </div>
-        );
+        // 🔄 Connection Status Component with Retry
+        const ConnectionStatus = ({ isConnected, isLoading }) => {
+            const [retrying, setRetrying] = React.useState(false);
+            
+            const handleRetry = () => {
+                setRetrying(true);
+                window.processOfflineQueue();
+                setTimeout(() => setRetrying(false), 2000);
+            };
+            
+            return (
+                <div className={`fixed bottom-4 right-4 z-50 flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm transition-all cursor-pointer ${
+                    isLoading ? 'bg-yellow-500 text-yellow-900' :
+                    isConnected ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 
+                    'bg-red-500 text-white animate-pulse'
+                }`} onClick={!isConnected && !retrying ? handleRetry : undefined}>
+                    <div className={`w-2 h-2 rounded-full ${retrying ? 'animate-spin' : ''} ${isLoading ? 'bg-yellow-900' : isConnected ? 'bg-green-400' : 'bg-white'}`}></div>
+                    {isLoading ? 'Yükleniyor...' : retrying ? 'Yeniden bağlanıyor...' : isConnected ? 'Bağlı' : 'Bağlantı Kesildi! (Tıkla)'}
+                    {!isConnected && window.pendingOperations && window.pendingOperations.length > 0 && (
+                        <span className="ml-1 bg-white/20 px-2 py-0.5 rounded-full text-xs">
+                            {window.pendingOperations.length} bekliyor
+                        </span>
+                    )}
+                </div>
+            );
+        };
 
         // 📊 Loading Skeleton Component
         const Skeleton = ({ className }) => (
@@ -818,51 +947,86 @@
                 const schoolsRef = window.dbRef(window.db, 'schools');
                 const usersRef = window.dbRef(window.db, 'users');
                 
-                // Optimized listeners with error handling
+                // Optimized listeners with proper error handling and cleanup
                 try {
-                    unsubscribers.push(window.dbOnValue(lobbyRef, (s) => {
-                        setLobbyUsers(s.val() || {});
-                        checkAllLoaded();
+                    const lobbyUnsub = window.dbOnValue(lobbyRef, (s) => {
+                        try {
+                            setLobbyUsers(s.val() || {});
+                            checkAllLoaded();
+                        } catch (err) {
+                            console.error('Lobby data processing error:', err);
+                            checkAllLoaded();
+                        }
                     }, (error) => {
                         console.error('Lobby listener error:', error);
+                        setToast({ message: 'Lobi verileri yüklenemedi', type: 'error' });
                         checkAllLoaded();
-                    }));
+                    });
+                    unsubscribers.push(lobbyUnsub);
                     
-                    unsubscribers.push(window.dbOnValue(gamesRef, (s) => {
-                        setGames(s.val() || {});
-                        checkAllLoaded();
+                    const gamesUnsub = window.dbOnValue(gamesRef, (s) => {
+                        try {
+                            setGames(s.val() || {});
+                            checkAllLoaded();
+                        } catch (err) {
+                            console.error('Games data processing error:', err);
+                            checkAllLoaded();
+                        }
                     }, (error) => {
                         console.error('Games listener error:', error);
+                        setToast({ message: 'Oyun verileri yüklenemedi', type: 'error' });
                         checkAllLoaded();
-                    }));
+                    });
+                    unsubscribers.push(gamesUnsub);
                     
-                    unsubscribers.push(window.dbOnValue(pendingRef, (s) => {
-                        setPendingUsers(s.val() || {});
-                        checkAllLoaded();
+                    const pendingUnsub = window.dbOnValue(pendingRef, (s) => {
+                        try {
+                            setPendingUsers(s.val() || {});
+                            checkAllLoaded();
+                        } catch (err) {
+                            console.error('Pending users data processing error:', err);
+                            checkAllLoaded();
+                        }
                     }, (error) => {
                         console.error('Pending users listener error:', error);
+                        setToast({ message: 'Bekleyen kullanıcılar yüklenemedi', type: 'error' });
                         checkAllLoaded();
-                    }));
+                    });
+                    unsubscribers.push(pendingUnsub);
                     
-                    unsubscribers.push(window.dbOnValue(schoolsRef, (s) => {
-                        setSchools(s.val() || {});
-                        checkAllLoaded();
+                    const schoolsUnsub = window.dbOnValue(schoolsRef, (s) => {
+                        try {
+                            setSchools(s.val() || {});
+                            checkAllLoaded();
+                        } catch (err) {
+                            console.error('Schools data processing error:', err);
+                            checkAllLoaded();
+                        }
                     }, (error) => {
                         console.error('Schools listener error:', error);
+                        setToast({ message: 'Okul verileri yüklenemedi', type: 'error' });
                         checkAllLoaded();
-                    }));
+                    });
+                    unsubscribers.push(schoolsUnsub);
                     
-                    unsubscribers.push(window.dbOnValue(usersRef, (s) => {
-                        setAllUsers(s.val() || {});
-                        checkAllLoaded();
+                    const usersUnsub = window.dbOnValue(usersRef, (s) => {
+                        try {
+                            setAllUsers(s.val() || {});
+                            checkAllLoaded();
+                        } catch (err) {
+                            console.error('Users data processing error:', err);
+                            checkAllLoaded();
+                        }
                     }, (error) => {
                         console.error('Users listener error:', error);
+                        setToast({ message: 'Kullanıcı verileri yüklenemedi', type: 'error' });
                         checkAllLoaded();
-                    }));
+                    });
+                    unsubscribers.push(usersUnsub);
                 } catch (error) {
                     console.error('Failed to setup listeners:', error);
                     setIsLoading(false);
-                    setToast({ message: 'Veri yüklenirken hata oluştu', type: 'error' });
+                    setToast({ message: 'Veri yüklenirken kritik hata oluştu', type: 'error' });
                 }
                 
                 return () => {
@@ -911,19 +1075,42 @@
                 setOperationInProgress(false);
             }, [canPerformOperation]);
 
-            // 👤 Memoized user operations
+            // 👤 Memoized user operations with transaction safety
             const approveUser = useCallback(async (uid, data) => {
                 if (!confirm(`${data.name} onaylansın mı? ✅`)) return;
                 if (!canPerformOperation()) return;
+                if (!window.isFirebaseConnected) {
+                    setToast({ message: 'Bağlantı yok! Tekrar deneyin.', type: 'error' });
+                    return;
+                }
                 
                 setOperationInProgress(true);
-                const success1 = await window.dbSet(window.dbRef(window.db, 'users/' + uid), data);
-                const success2 = await window.dbRemove(window.dbRef(window.db, 'pending_users/' + uid));
-                
-                if (success1 && success2) {
+                try {
+                    // First verify pending user still exists
+                    const pendingSnapshot = await window.dbGet(window.dbRef(window.db, 'pending_users/' + uid));
+                    if (!pendingSnapshot.exists()) {
+                        setToast({ message: 'Kullanıcı bulunamadı!', type: 'error' });
+                        setOperationInProgress(false);
+                        return;
+                    }
+                    
+                    const success1 = await window.dbSet(window.dbRef(window.db, 'users/' + uid), data);
+                    if (!success1) throw new Error('Kullanıcı ekleme başarısız');
+                    
+                    const success2 = await window.dbRemove(window.dbRef(window.db, 'pending_users/' + uid));
+                    if (!success2) {
+                        // Rollback: remove from users if pending removal failed
+                        await window.dbRemove(window.dbRef(window.db, 'users/' + uid));
+                        throw new Error('Pending kullanıcı kaldırma başarısız');
+                    }
+                    
                     setToast({ message: `${data.name} onaylandı!`, type: 'success' });
+                } catch (error) {
+                    console.error('Approve user error:', error);
+                    setToast({ message: 'Onaylama başarısız: ' + error.message, type: 'error' });
+                } finally {
+                    setOperationInProgress(false);
                 }
-                setOperationInProgress(false);
             }, [canPerformOperation]);
 
             const rejectUser = useCallback(async (uid) => {
@@ -941,52 +1128,98 @@
             const deleteStudent = useCallback(async (uid, name) => {
                 if (!confirm(`${name} silinsin mi? 🗑️`)) return;
                 if (!canPerformOperation()) return;
+                if (!window.isFirebaseConnected) {
+                    setToast({ message: 'Bağlantı yok!', type: 'error' });
+                    return;
+                }
                 
                 setOperationInProgress(true);
-                await window.dbRemove(window.dbRef(window.db, 'users/' + uid));
-                await window.dbRemove(window.dbRef(window.db, 'lobby/' + uid));
-                setToast({ message: `${name} silindi`, type: 'success' });
-                setOperationInProgress(false);
+                try {
+                    // Cascade delete with proper error handling
+                    const results = await Promise.allSettled([
+                        window.dbRemove(window.dbRef(window.db, 'users/' + uid)),
+                        window.dbRemove(window.dbRef(window.db, 'lobby/' + uid))
+                    ]);
+                    
+                    const failed = results.filter(r => r.status === 'rejected');
+                    if (failed.length > 0) {
+                        console.error('Some delete operations failed:', failed);
+                        setToast({ message: `${name} kısmen silindi (${results.filter(r => r.status === 'fulfilled').length}/2)`, type: 'error' });
+                    } else {
+                        setToast({ message: `${name} silindi`, type: 'success' });
+                    }
+                } catch (error) {
+                    console.error('Delete student error:', error);
+                    setToast({ message: 'Silme başarısız: ' + error.message, type: 'error' });
+                } finally {
+                    setOperationInProgress(false);
+                }
             }, [canPerformOperation]);
 
-            // 🏆 Rozet Verme İşlemi
+            // 🏆 Rozet Verme İşlemi with Safety
             const giveBadge = useCallback(async (uid, badgeKey) => {
                 if (!canPerformOperation()) return;
+                if (!window.isFirebaseConnected) {
+                    setToast({ message: 'Bağlantı yok!', type: 'error' });
+                    return;
+                }
                 
                 setOperationInProgress(true);
-                const userRef = window.dbRef(window.db, 'users/' + uid);
-                const snapshot = await window.dbGet(userRef);
-                if (snapshot.exists()) {
+                try {
+                    const userRef = window.dbRef(window.db, 'users/' + uid);
+                    const snapshot = await window.dbGet(userRef);
+                    if (!snapshot.exists()) {
+                        throw new Error('Kullanıcı bulunamadı');
+                    }
+                    
                     const userData = snapshot.val();
                     const currentBadges = userData.badges || [];
                     if (!currentBadges.includes(badgeKey)) {
                         currentBadges.push(badgeKey);
-                        await window.dbUpdate(userRef, { badges: currentBadges });
+                        const success = await window.dbUpdate(userRef, { badges: currentBadges });
+                        if (!success) throw new Error('Rozet güncellemesi başarısız');
                         setToast({ message: `🏆 ${BADGES[badgeKey].name} rozeti verildi!`, type: 'success' });
                     } else {
                         setToast({ message: 'Bu rozet zaten var!', type: 'error' });
                     }
+                } catch (error) {
+                    console.error('Give badge error:', error);
+                    setToast({ message: 'Rozet verme başarısız: ' + error.message, type: 'error' });
+                } finally {
+                    setOperationInProgress(false);
+                    setBadgeModalUser(null);
+                    setSelectedBadgeToGive(null);
                 }
-                setOperationInProgress(false);
-                setBadgeModalUser(null);
-                setSelectedBadgeToGive(null);
             }, [canPerformOperation]);
 
-            // 🏆 Rozet Silme İşlemi
+            // 🏆 Rozet Silme İşlemi with Safety
             const removeBadge = useCallback(async (uid, badgeKey) => {
                 if (!confirm(`Bu rozeti silmek istediğinize emin misiniz?`)) return;
                 if (!canPerformOperation()) return;
+                if (!window.isFirebaseConnected) {
+                    setToast({ message: 'Bağlantı yok!', type: 'error' });
+                    return;
+                }
                 
                 setOperationInProgress(true);
-                const userRef = window.dbRef(window.db, 'users/' + uid);
-                const snapshot = await window.dbGet(userRef);
-                if (snapshot.exists()) {
+                try {
+                    const userRef = window.dbRef(window.db, 'users/' + uid);
+                    const snapshot = await window.dbGet(userRef);
+                    if (!snapshot.exists()) {
+                        throw new Error('Kullanıcı bulunamadı');
+                    }
+                    
                     const userData = snapshot.val();
                     const currentBadges = (userData.badges || []).filter(b => b !== badgeKey);
-                    await window.dbUpdate(userRef, { badges: currentBadges });
+                    const success = await window.dbUpdate(userRef, { badges: currentBadges });
+                    if (!success) throw new Error('Rozet güncellemesi başarısız');
                     setToast({ message: `Rozet kaldırıldı`, type: 'success' });
+                } catch (error) {
+                    console.error('Remove badge error:', error);
+                    setToast({ message: 'Rozet kaldırma başarısız: ' + error.message, type: 'error' });
+                } finally {
+                    setOperationInProgress(false);
                 }
-                setOperationInProgress(false);
             }, [canPerformOperation]);
 
             // 🎮 Memoized game operations
@@ -1005,18 +1238,41 @@
             const resetSystem = useCallback(async () => {
                 if (!confirm("⚠️ Tüm oyunlar ve lobi sıfırlansın mı?")) return;
                 if (!canPerformOperation()) return;
+                if (!window.isFirebaseConnected) {
+                    setToast({ message: 'Bağlantı yok!', type: 'error' });
+                    return;
+                }
                 
                 setOperationInProgress(true);
-                await window.dbRemove(window.dbRef(window.db, 'games'));
-                await window.dbRemove(window.dbRef(window.db, 'lobby'));
-                setToast({ message: 'Sistem sıfırlandı!', type: 'success' });
-                setOperationInProgress(false);
+                try {
+                    const results = await Promise.allSettled([
+                        window.dbRemove(window.dbRef(window.db, 'games')),
+                        window.dbRemove(window.dbRef(window.db, 'lobby'))
+                    ]);
+                    
+                    const failed = results.filter(r => r.status === 'rejected');
+                    if (failed.length > 0) {
+                        console.error('Some reset operations failed:', failed);
+                        setToast({ message: 'Sistem kısmen sıfırlandı!', type: 'error' });
+                    } else {
+                        setToast({ message: 'Sistem sıfırlandı!', type: 'success' });
+                    }
+                } catch (error) {
+                    console.error('Reset system error:', error);
+                    setToast({ message: 'Sıfırlama hatası: ' + error.message, type: 'error' });
+                } finally {
+                    setOperationInProgress(false);
+                }
             }, [canPerformOperation]);
 
-            // 🏆 Tournament starter with batch operations
+            // 🏆 Tournament starter with batch operations and error handling
             const startTournament = useCallback(async (type) => {
                 setShowGameSelector(false);
                 if (!canPerformOperation()) return;
+                if (!window.isFirebaseConnected) {
+                    setToast({ message: 'Bağlantı yok!', type: 'error' });
+                    return;
+                }
                 
                 const waiting = Object.entries(lobbyUsers)
                     .filter(([_, u]) => u.state === 'waiting')
@@ -1030,42 +1286,71 @@
                 setOperationInProgress(true);
                 const shuffled = waiting.sort(() => 0.5 - Math.random());
                 let matchesCreated = 0;
+                let matchesFailed = 0;
                 
-                for (let i = 0; i < shuffled.length; i += 2) {
-                    if (i + 1 >= shuffled.length) break;
-                    const p1 = shuffled[i];
-                    const p2 = shuffled[i + 1];
-                    const id = Math.floor(Math.random() * 90000 + 10000).toString();
+                try {
+                    for (let i = 0; i < shuffled.length; i += 2) {
+                        if (i + 1 >= shuffled.length) break;
+                        const p1 = shuffled[i];
+                        const p2 = shuffled[i + 1];
+                        const id = Math.floor(Math.random() * 90000 + 10000).toString();
+                        
+                        let data = {
+                            isP1Turn: true,
+                            players: { p1: { name: p1.name }, p2: { name: p2.name } },
+                            type,
+                            createdAt: Date.now()
+                        };
+
+                        if (type === 'mangala') {
+                            data.board = [4, 4, 4, 4, 4, 4, 0, 4, 4, 4, 4, 4, 4, 0];
+                        } else if (type === 'reversi') {
+                            let b = Array(64).fill(0);
+                            b[27] = 2; b[28] = 1; b[35] = 1; b[36] = 2;
+                            data.board = b;
+                        } else if (type === 'pentago') {
+                            data.board = Array(36).fill(0);
+                            data.phase = 'place';
+                            data.lastPlaced = null;
+                        }
+
+                        try {
+                            const success = await window.dbSet(window.dbRef(window.db, 'games/' + id), data);
+                            if (success) {
+                                const results = await Promise.allSettled([
+                                    window.dbUpdate(window.dbRef(window.db, 'lobby/' + p1.id), { gameId: id, role: 'P1', state: 'playing' }),
+                                    window.dbUpdate(window.dbRef(window.db, 'lobby/' + p2.id), { gameId: id, role: 'P2', state: 'playing' })
+                                ]);
+                                
+                                const failedUpdates = results.filter(r => r.status === 'rejected');
+                                if (failedUpdates.length === 0) {
+                                    matchesCreated++;
+                                } else {
+                                    console.error('Failed to update lobby for some players:', failedUpdates);
+                                    // Rollback: delete the game if player updates failed
+                                    await window.dbRemove(window.dbRef(window.db, 'games/' + id));
+                                    matchesFailed++;
+                                }
+                            } else {
+                                matchesFailed++;
+                            }
+                        } catch (error) {
+                            console.error('Error creating match:', error);
+                            matchesFailed++;
+                        }
+                    }
                     
-                    let data = {
-                        isP1Turn: true,
-                        players: { p1: { name: p1.name }, p2: { name: p2.name } },
-                        type,
-                        createdAt: Date.now()
-                    };
-
-                    if (type === 'mangala') {
-                        data.board = [4, 4, 4, 4, 4, 4, 0, 4, 4, 4, 4, 4, 4, 0];
-                    } else if (type === 'reversi') {
-                        let b = Array(64).fill(0);
-                        b[27] = 2; b[28] = 1; b[35] = 1; b[36] = 2;
-                        data.board = b;
-                    } else if (type === 'pentago') {
-                        data.board = Array(36).fill(0);
-                        data.phase = 'place';
-                        data.lastPlaced = null;
+                    if (matchesCreated > 0) {
+                        setToast({ message: `${matchesCreated} maç oluşturuldu! 🎮${matchesFailed > 0 ? ` (${matchesFailed} başarısız)` : ''}`, type: 'success' });
+                    } else {
+                        setToast({ message: 'Maç oluşturulamadı!', type: 'error' });
                     }
-
-                    const success = await window.dbSet(window.dbRef(window.db, 'games/' + id), data);
-                    if (success) {
-                        await window.dbUpdate(window.dbRef(window.db, 'lobby/' + p1.id), { gameId: id, role: 'P1', state: 'playing' });
-                        await window.dbUpdate(window.dbRef(window.db, 'lobby/' + p2.id), { gameId: id, role: 'P2', state: 'playing' });
-                        matchesCreated++;
-                    }
+                } catch (error) {
+                    console.error('Tournament start error:', error);
+                    setToast({ message: 'Turnuva başlatma hatası: ' + error.message, type: 'error' });
+                } finally {
+                    setOperationInProgress(false);
                 }
-                
-                setToast({ message: `${matchesCreated} maç oluşturuldu! 🎮`, type: 'success' });
-                setOperationInProgress(false);
             }, [lobbyUsers, canPerformOperation]);
 
             // 📊 Memoized statistics
