@@ -304,6 +304,7 @@
         .btn-yellow { background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%); color: #333; }
         .btn-teal { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; }
         .btn-indigo { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .btn-gray { background: linear-gradient(135deg, #a8a8a8 0%, #c0c0c0 100%); color: #333; }
 
         /* 🌈 RAINBOW TEXT */
         .rainbow-text {
@@ -890,6 +891,13 @@
             const [showGameSelector, setShowGameSelector] = useState(false);
             const [spectatingGameId, setSpectatingGameId] = useState(null);
             
+            // 🎯 Eşleştirme Modları
+            const [matchingMode, setMatchingMode] = useState('random'); // 'random', 'manual', 'school-random', 'cross-school', 'swiss'
+            const [selectedPlayer1, setSelectedPlayer1] = useState(null);
+            const [selectedPlayer2, setSelectedPlayer2] = useState(null);
+            const [selectedSchool1, setSelectedSchool1] = useState("");
+            const [selectedSchool2, setSelectedSchool2] = useState("");
+            
             // 🆕 Performance & UX States
             const [isConnected, setIsConnected] = useState(true);
             const [isLoading, setIsLoading] = useState(true);
@@ -1275,17 +1283,144 @@
                     return;
                 }
                 
-                const waiting = Object.entries(lobbyUsers)
-                    .filter(([_, u]) => u.state === 'waiting')
-                    .map(([id, u]) => ({ ...u, id }));
+                let playersToMatch = [];
                 
-                if (waiting.length < 2) {
+                // 🎯 Eşleştirme Moduna Göre Oyuncu Seçimi
+                if (matchingMode === 'manual') {
+                    // Manuel Eşleştirme - Seçilen 2 oyuncu
+                    if (!selectedPlayer1 || !selectedPlayer2) {
+                        setToast({ message: 'Lütfen iki oyuncu seçin! 👥', type: 'error' });
+                        return;
+                    }
+                    const p1 = lobbyUsers[selectedPlayer1];
+                    const p2 = lobbyUsers[selectedPlayer2];
+                    if (!p1 || !p2 || p1.state !== 'waiting' || p2.state !== 'waiting') {
+                        setToast({ message: 'Seçilen oyuncular uygun değil!', type: 'error' });
+                        return;
+                    }
+                    playersToMatch = [{ ...p1, id: selectedPlayer1 }, { ...p2, id: selectedPlayer2 }];
+                    
+                } else if (matchingMode === 'school-random') {
+                    // Okul İçi Rastgele Eşleştirme
+                    if (!selectedSchool1) {
+                        setToast({ message: 'Lütfen bir okul seçin! 🏫', type: 'error' });
+                        return;
+                    }
+                    const schoolPlayers = Object.entries(lobbyUsers)
+                        .filter(([_, u]) => u.state === 'waiting' && u.schoolId === selectedSchool1)
+                        .map(([id, u]) => ({ ...u, id }));
+                    
+                    if (schoolPlayers.length < 2) {
+                        setToast({ message: 'Seçilen okulda en az 2 bekleyen öğrenci olmalı! 👥', type: 'error' });
+                        return;
+                    }
+                    playersToMatch = schoolPlayers;
+                    
+                } else if (matchingMode === 'cross-school') {
+                    // Okullar Arası Eşleştirme
+                    if (!selectedSchool1 || !selectedSchool2) {
+                        setToast({ message: 'Lütfen iki okul seçin! 🏫', type: 'error' });
+                        return;
+                    }
+                    const school1Players = Object.entries(lobbyUsers)
+                        .filter(([_, u]) => u.state === 'waiting' && u.schoolId === selectedSchool1)
+                        .map(([id, u]) => ({ ...u, id }));
+                    const school2Players = Object.entries(lobbyUsers)
+                        .filter(([_, u]) => u.state === 'waiting' && u.schoolId === selectedSchool2)
+                        .map(([id, u]) => ({ ...u, id }));
+                    
+                    if (school1Players.length === 0 || school2Players.length === 0) {
+                        setToast({ message: 'Her iki okulda da bekleyen öğrenci olmalı! 👥', type: 'error' });
+                        return;
+                    }
+                    
+                    // İki okul arasında dengeli eşleştirme
+                    const minMatches = Math.min(school1Players.length, school2Players.length);
+                    const shuffled1 = school1Players.sort(() => 0.5 - Math.random()).slice(0, minMatches);
+                    const shuffled2 = school2Players.sort(() => 0.5 - Math.random()).slice(0, minMatches);
+                    
+                    // Birleştirip tek liste haline getir (çiftler halinde)
+                    playersToMatch = [];
+                    for (let i = 0; i < minMatches; i++) {
+                        playersToMatch.push(shuffled1[i], shuffled2[i]);
+                    }
+                    
+                } else if (matchingMode === 'swiss') {
+                    // 🏆 İsviçre Sistemi - Benzer puanlı oyuncuları eşleştir
+                    const waitingPlayers = Object.entries(lobbyUsers)
+                        .filter(([_, u]) => u.state === 'waiting')
+                        .map(([id, u]) => {
+                            const userStats = allUsers[id]?.stats || {};
+                            const wins = userStats.wins || 0;
+                            return { ...u, id, wins };
+                        });
+                    
+                    if (waitingPlayers.length < 2) {
+                        setToast({ message: 'En az 2 öğrenci lobide bekliyor olmalı! 👥', type: 'error' });
+                        return;
+                    }
+                    
+                    // Kazanma sayısına göre sırala (en yüksekten en düşüğe)
+                    waitingPlayers.sort((a, b) => b.wins - a.wins);
+                    
+                    // İsviçre sistemine göre eşleştir:
+                    // Aynı veya yakın puanlı oyuncuları eşleştir
+                    playersToMatch = [];
+                    const matched = new Set();
+                    
+                    for (let i = 0; i < waitingPlayers.length; i++) {
+                        if (matched.has(i)) continue;
+                        
+                        const p1 = waitingPlayers[i];
+                        let bestMatchIndex = -1;
+                        let bestScoreDiff = Infinity;
+                        
+                        // En yakın puanlı eşleşmemiş oyuncuyu bul
+                        for (let j = i + 1; j < waitingPlayers.length; j++) {
+                            if (matched.has(j)) continue;
+                            
+                            const p2 = waitingPlayers[j];
+                            const scoreDiff = Math.abs(p1.wins - p2.wins);
+                            
+                            if (scoreDiff < bestScoreDiff) {
+                                bestScoreDiff = scoreDiff;
+                                bestMatchIndex = j;
+                            }
+                        }
+                        
+                        if (bestMatchIndex !== -1) {
+                            playersToMatch.push(p1, waitingPlayers[bestMatchIndex]);
+                            matched.add(i);
+                            matched.add(bestMatchIndex);
+                        }
+                    }
+                    
+                    if (playersToMatch.length < 2) {
+                        setToast({ message: 'Eşleştirme yapılamadı!', type: 'error' });
+                        return;
+                    }
+                    
+                } else {
+                    // Varsayılan Rastgele Eşleştirme (eski davranış)
+                    playersToMatch = Object.entries(lobbyUsers)
+                        .filter(([_, u]) => u.state === 'waiting')
+                        .map(([id, u]) => ({ ...u, id }));
+                }
+                
+                if (playersToMatch.length < 2) {
                     setToast({ message: 'En az 2 öğrenci lobide bekliyor olmalı! 👥', type: 'error' });
                     return;
                 }
 
                 setOperationInProgress(true);
-                const shuffled = waiting.sort(() => 0.5 - Math.random());
+                
+                // Manuel mod dışında karıştır
+                const shuffled = matchingMode === 'cross-school' 
+                    ? playersToMatch // Zaten dengeli şekilde hazırlandı
+                    : matchingMode === 'manual' 
+                        ? playersToMatch // Manuel seçim, karıştırmaya gerek yok
+                        : playersToMatch.sort(() => 0.5 - Math.random()); // Diğer modlarda karıştır
+                
                 let matchesCreated = 0;
                 let matchesFailed = 0;
                 
@@ -1343,6 +1478,11 @@
                     
                     if (matchesCreated > 0) {
                         setToast({ message: `${matchesCreated} maç oluşturuldu! 🎮${matchesFailed > 0 ? ` (${matchesFailed} başarısız)` : ''}`, type: 'success' });
+                        // Reset selections
+                        setSelectedPlayer1(null);
+                        setSelectedPlayer2(null);
+                        setSelectedSchool1('');
+                        setSelectedSchool2('');
                     } else {
                         setToast({ message: 'Maç oluşturulamadı!', type: 'error' });
                     }
@@ -1352,7 +1492,7 @@
                 } finally {
                     setOperationInProgress(false);
                 }
-            }, [lobbyUsers, canPerformOperation]);
+            }, [lobbyUsers, canPerformOperation, matchingMode, selectedPlayer1, selectedPlayer2, selectedSchool1, selectedSchool2, allUsers]);
 
             // 📊 Memoized statistics
             const stats = useMemo(() => ({
@@ -1598,29 +1738,186 @@
 
                     {/* Game Selector Modal */}
                     {showGameSelector && (
-                        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                            <div className="glass-card-light p-8 max-w-lg w-full text-center pop-in">
-                                <h3 className="text-2xl font-bold text-gray-800 mb-2">🎮 Oyun Türü Seç</h3>
-                                <p className="text-gray-500 mb-6">Turnuva için hangi oyun oynansın?</p>
+                        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+                            <div className="glass-card-light p-8 max-w-4xl w-full pop-in my-8">
+                                <h3 className="text-2xl font-bold text-gray-800 mb-2 text-center">🎮 Eşleştirme Yönetimi</h3>
+                                <p className="text-gray-500 mb-6 text-center">Eşleştirme modunu ve oyun türünü seçin</p>
                                 
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                                    <button onClick={() => startTournament('mangala')} className="btn-candy btn-yellow py-6 flex flex-col items-center gap-2">
-                                        <span className="text-3xl">🎯</span>
-                                        <span className="font-bold">MANGALA</span>
-                                    </button>
-                                    <button onClick={() => startTournament('reversi')} className="btn-candy btn-green py-6 flex flex-col items-center gap-2">
-                                        <span className="text-3xl">⚫</span>
-                                        <span className="font-bold">REVERSİ</span>
-                                    </button>
-                                    <button onClick={() => startTournament('pentago')} className="btn-candy btn-purple py-6 flex flex-col items-center gap-2">
-                                        <span className="text-3xl">🔮</span>
-                                        <span className="font-bold">PENTAGO</span>
-                                    </button>
+                                {/* Eşleştirme Modu Seçimi */}
+                                <div className="mb-6">
+                                    <h4 className="text-lg font-bold text-gray-700 mb-3 text-center">📋 Eşleştirme Modu</h4>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                                        <button 
+                                            onClick={() => setMatchingMode('random')} 
+                                            className={`btn-candy py-4 flex flex-col items-center gap-2 ${matchingMode === 'random' ? 'btn-blue ring-4 ring-blue-300' : 'btn-gray'}`}
+                                        >
+                                            <span className="text-2xl">🎲</span>
+                                            <span className="font-bold text-sm">Rastgele</span>
+                                        </button>
+                                        <button 
+                                            onClick={() => setMatchingMode('manual')} 
+                                            className={`btn-candy py-4 flex flex-col items-center gap-2 ${matchingMode === 'manual' ? 'btn-purple ring-4 ring-purple-300' : 'btn-gray'}`}
+                                        >
+                                            <span className="text-2xl">✋</span>
+                                            <span className="font-bold text-sm">Manuel</span>
+                                        </button>
+                                        <button 
+                                            onClick={() => setMatchingMode('school-random')} 
+                                            className={`btn-candy py-4 flex flex-col items-center gap-2 ${matchingMode === 'school-random' ? 'btn-green ring-4 ring-green-300' : 'btn-gray'}`}
+                                        >
+                                            <span className="text-2xl">🏫</span>
+                                            <span className="font-bold text-sm">Okul İçi</span>
+                                        </button>
+                                        <button 
+                                            onClick={() => setMatchingMode('cross-school')} 
+                                            className={`btn-candy py-4 flex flex-col items-center gap-2 ${matchingMode === 'cross-school' ? 'btn-yellow ring-4 ring-yellow-300' : 'btn-gray'}`}
+                                        >
+                                            <span className="text-2xl">🏫🆚🏫</span>
+                                            <span className="font-bold text-sm">Okullar Arası</span>
+                                        </button>
+                                        <button 
+                                            onClick={() => setMatchingMode('swiss')} 
+                                            className={`btn-candy py-4 flex flex-col items-center gap-2 ${matchingMode === 'swiss' ? 'btn-red ring-4 ring-red-300' : 'btn-gray'}`}
+                                        >
+                                            <span className="text-2xl">🏆</span>
+                                            <span className="font-bold text-sm">İsviçre Sistemi</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Manuel Eşleştirme UI */}
+                                {matchingMode === 'manual' && (
+                                    <div className="mb-6 p-4 bg-purple-50 rounded-xl">
+                                        <h4 className="text-md font-bold text-purple-700 mb-3">✋ Manuel Oyuncu Seçimi</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-700 mb-2">👤 Oyuncu 1</label>
+                                                <select 
+                                                    onChange={e => setSelectedPlayer1(e.target.value)}
+                                                    value={selectedPlayer1 || ''}
+                                                    className="input-fun w-full"
+                                                >
+                                                    <option value="">Oyuncu Seçin...</option>
+                                                    {Object.entries(lobbyUsers)
+                                                        .filter(([id, u]) => u.state === 'waiting' && id !== selectedPlayer2)
+                                                        .map(([id, u]) => (
+                                                            <option key={id} value={id}>{u.name} ({u.class})</option>
+                                                        ))
+                                                    }
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-700 mb-2">👤 Oyuncu 2</label>
+                                                <select 
+                                                    onChange={e => setSelectedPlayer2(e.target.value)}
+                                                    value={selectedPlayer2 || ''}
+                                                    className="input-fun w-full"
+                                                >
+                                                    <option value="">Oyuncu Seçin...</option>
+                                                    {Object.entries(lobbyUsers)
+                                                        .filter(([id, u]) => u.state === 'waiting' && id !== selectedPlayer1)
+                                                        .map(([id, u]) => (
+                                                            <option key={id} value={id}>{u.name} ({u.class})</option>
+                                                        ))
+                                                    }
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Okul İçi Rastgele Eşleştirme UI */}
+                                {matchingMode === 'school-random' && (
+                                    <div className="mb-6 p-4 bg-green-50 rounded-xl">
+                                        <h4 className="text-md font-bold text-green-700 mb-3">🏫 Okul Seçimi</h4>
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-2">Okul Seçin</label>
+                                            <select 
+                                                onChange={e => setSelectedSchool1(e.target.value)}
+                                                value={selectedSchool1}
+                                                className="input-fun w-full"
+                                            >
+                                                <option value="">Okul Seçin...</option>
+                                                {Object.values(schools).map(s => (
+                                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Okullar Arası Eşleştirme UI */}
+                                {matchingMode === 'cross-school' && (
+                                    <div className="mb-6 p-4 bg-yellow-50 rounded-xl">
+                                        <h4 className="text-md font-bold text-yellow-700 mb-3">🏫🆚🏫 İki Okul Seçimi</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-700 mb-2">🏫 Okul 1</label>
+                                                <select 
+                                                    onChange={e => setSelectedSchool1(e.target.value)}
+                                                    value={selectedSchool1}
+                                                    className="input-fun w-full"
+                                                >
+                                                    <option value="">Okul Seçin...</option>
+                                                    {Object.values(schools)
+                                                        .filter(s => s.id !== selectedSchool2)
+                                                        .map(s => (
+                                                            <option key={s.id} value={s.id}>{s.name}</option>
+                                                        ))
+                                                    }
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-gray-700 mb-2">🏫 Okul 2</label>
+                                                <select 
+                                                    onChange={e => setSelectedSchool2(e.target.value)}
+                                                    value={selectedSchool2}
+                                                    className="input-fun w-full"
+                                                >
+                                                    <option value="">Okul Seçin...</option>
+                                                    {Object.values(schools)
+                                                        .filter(s => s.id !== selectedSchool1)
+                                                        .map(s => (
+                                                            <option key={s.id} value={s.id}>{s.name}</option>
+                                                        ))
+                                                    }
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Oyun Türü Seçimi */}
+                                <div className="mb-6">
+                                    <h4 className="text-lg font-bold text-gray-700 mb-3 text-center">🎮 Oyun Türü</h4>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        <button onClick={() => startTournament('mangala')} className="btn-candy btn-yellow py-6 flex flex-col items-center gap-2">
+                                            <span className="text-3xl">🎯</span>
+                                            <span className="font-bold">MANGALA</span>
+                                        </button>
+                                        <button onClick={() => startTournament('reversi')} className="btn-candy btn-green py-6 flex flex-col items-center gap-2">
+                                            <span className="text-3xl">⚫</span>
+                                            <span className="font-bold">REVERSİ</span>
+                                        </button>
+                                        <button onClick={() => startTournament('pentago')} className="btn-candy btn-purple py-6 flex flex-col items-center gap-2">
+                                            <span className="text-3xl">🔮</span>
+                                            <span className="font-bold">PENTAGO</span>
+                                        </button>
+                                    </div>
                                 </div>
                                 
-                                <button onClick={() => setShowGameSelector(false)} className="text-gray-400 font-bold hover:text-gray-600">
-                                    İptal
-                                </button>
+                                <div className="text-center">
+                                    <button onClick={() => {
+                                        setShowGameSelector(false);
+                                        setMatchingMode('random');
+                                        setSelectedPlayer1(null);
+                                        setSelectedPlayer2(null);
+                                        setSelectedSchool1('');
+                                        setSelectedSchool2('');
+                                    }} className="text-gray-400 font-bold hover:text-gray-600">
+                                        İptal
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}

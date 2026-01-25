@@ -344,34 +344,96 @@
             100% { transform: scale(1); }
         }
         
-        /* 🎯 MANGALA STONE MOVEMENT ANIMATION */
+        /* 🎯 MANGALA STONE MOVEMENT ANIMATION - İyileştirilmiş */
         @keyframes stoneMove {
-            0% { opacity: 1; transform: scale(1) translateY(0); }
-            30% { transform: scale(1.3) translateY(-20px); }
-            60% { transform: scale(0.9) translateY(-10px); }
-            100% { opacity: 0; transform: scale(0.5) translateY(0); }
+            0% { 
+                opacity: 1; 
+                transform: scale(1) translateY(0); 
+                filter: brightness(1);
+            }
+            20% { 
+                transform: scale(1.4) translateY(-30px); 
+                filter: brightness(1.3);
+            }
+            40% { 
+                transform: scale(1.2) translateY(-40px) translateX(-5px); 
+            }
+            60% { 
+                transform: scale(1.1) translateY(-25px) translateX(5px); 
+                opacity: 0.8;
+            }
+            80% { 
+                transform: scale(0.8) translateY(-10px); 
+                opacity: 0.4;
+            }
+            100% { 
+                opacity: 0; 
+                transform: scale(0.3) translateY(0); 
+                filter: brightness(0.5);
+            }
         }
         .stone-moving {
-            animation: stoneMove 0.5s ease-out forwards;
+            animation: stoneMove 0.6s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+            position: relative;
+            z-index: 10;
         }
         
-        /* 🌊 STONE LANDING ANIMATION */
+        /* 🌊 STONE LANDING ANIMATION - İyileştirilmiş */
         @keyframes stoneLand {
-            0% { transform: scale(0) translateY(-30px); opacity: 0; }
-            50% { transform: scale(1.3) translateY(0); opacity: 1; }
-            100% { transform: scale(1) translateY(0); opacity: 1; }
+            0% { 
+                transform: scale(0) translateY(-50px) rotate(-180deg); 
+                opacity: 0;
+                filter: brightness(1.5);
+            }
+            40% { 
+                transform: scale(1.5) translateY(-5px) rotate(-90deg); 
+                opacity: 1;
+                filter: brightness(1.3);
+            }
+            70% { 
+                transform: scale(0.9) translateY(5px) rotate(-20deg); 
+                filter: brightness(1.1);
+            }
+            85% { 
+                transform: scale(1.1) translateY(-2px) rotate(5deg); 
+            }
+            100% { 
+                transform: scale(1) translateY(0) rotate(0deg); 
+                opacity: 1;
+                filter: brightness(1);
+            }
         }
         .stone-landing {
-            animation: stoneLand 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            animation: stoneLand 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            position: relative;
+            z-index: 5;
         }
         
-        /* ✨ PIT HIGHLIGHT ANIMATION */
+        /* ✨ PIT HIGHLIGHT ANIMATION - İyileştirilmiş */
         @keyframes pitHighlight {
-            0%, 100% { box-shadow: inset 0 4px 15px rgba(0,0,0,0.6), 0 0 0 rgba(255,215,0,0); }
-            50% { box-shadow: inset 0 4px 15px rgba(0,0,0,0.6), 0 0 20px rgba(255,215,0,0.8); }
+            0% { 
+                box-shadow: inset 0 4px 15px rgba(0,0,0,0.6), 0 0 0 rgba(255,215,0,0);
+                transform: scale(1);
+            }
+            25% { 
+                box-shadow: inset 0 4px 15px rgba(0,0,0,0.6), 0 0 25px rgba(255,215,0,1), 0 0 40px rgba(255,215,0,0.6);
+                transform: scale(1.08);
+            }
+            50% { 
+                box-shadow: inset 0 4px 15px rgba(0,0,0,0.6), 0 0 30px rgba(255,215,0,1), 0 0 50px rgba(255,215,0,0.8);
+                transform: scale(1.05);
+            }
+            75% { 
+                box-shadow: inset 0 4px 15px rgba(0,0,0,0.6), 0 0 20px rgba(255,215,0,0.8);
+                transform: scale(1.03);
+            }
+            100% { 
+                box-shadow: inset 0 4px 15px rgba(0,0,0,0.6), 0 0 0 rgba(255,215,0,0);
+                transform: scale(1);
+            }
         }
         .pit-highlight {
-            animation: pitHighlight 0.3s ease-in-out;
+            animation: pitHighlight 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
         }
 
         /* 📱 RESPONSIVE */
@@ -433,22 +495,88 @@
         }
         .wave { animation: wave 1s ease-in-out infinite; display: inline-block; }
         
-        /* 🔄 PENTAGO QUADRANT ROTATION */
+        /* 🔄 PENTAGO QUADRANT ROTATION - İyileştirilmiş */
         @keyframes rotateClockwise {
-            0% { transform: rotate(0deg) scale(1); }
-            50% { transform: rotate(45deg) scale(1.05); }
-            100% { transform: rotate(90deg) scale(1); }
+            0% { 
+                transform: rotate(0deg) scale(1); 
+                filter: brightness(1);
+                box-shadow: 0 0 0 rgba(139, 92, 246, 0);
+            }
+            25% { 
+                transform: rotate(30deg) scale(1.12); 
+                filter: brightness(1.2);
+                box-shadow: 0 0 20px rgba(139, 92, 246, 0.6);
+            }
+            50% { 
+                transform: rotate(60deg) scale(1.15); 
+                filter: brightness(1.3);
+                box-shadow: 0 0 30px rgba(139, 92, 246, 0.8);
+            }
+            75% { 
+                transform: rotate(85deg) scale(1.08); 
+                filter: brightness(1.15);
+                box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+            }
+            100% { 
+                transform: rotate(90deg) scale(1); 
+                filter: brightness(1);
+                box-shadow: 0 0 0 rgba(139, 92, 246, 0);
+            }
         }
         @keyframes rotateCounterClockwise {
-            0% { transform: rotate(0deg) scale(1); }
-            50% { transform: rotate(-45deg) scale(1.05); }
-            100% { transform: rotate(-90deg) scale(1); }
+            0% { 
+                transform: rotate(0deg) scale(1); 
+                filter: brightness(1);
+                box-shadow: 0 0 0 rgba(236, 72, 153, 0);
+            }
+            25% { 
+                transform: rotate(-30deg) scale(1.12); 
+                filter: brightness(1.2);
+                box-shadow: 0 0 20px rgba(236, 72, 153, 0.6);
+            }
+            50% { 
+                transform: rotate(-60deg) scale(1.15); 
+                filter: brightness(1.3);
+                box-shadow: 0 0 30px rgba(236, 72, 153, 0.8);
+            }
+            75% { 
+                transform: rotate(-85deg) scale(1.08); 
+                filter: brightness(1.15);
+                box-shadow: 0 0 20px rgba(236, 72, 153, 0.5);
+            }
+            100% { 
+                transform: rotate(-90deg) scale(1); 
+                filter: brightness(1);
+                box-shadow: 0 0 0 rgba(236, 72, 153, 0);
+            }
         }
         .rotating-cw {
-            animation: rotateClockwise 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            animation: rotateClockwise 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            transform-origin: center center;
+            position: relative;
+            z-index: 10;
         }
         .rotating-ccw {
-            animation: rotateCounterClockwise 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            animation: rotateCounterClockwise 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            transform-origin: center center;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* 🎯 PENTAGO MARBLE ROTATION EFFECT */
+        .rotating-cw > div > div {
+            animation: marbleRotateCW 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .rotating-ccw > div > div {
+            animation: marbleRotateCCW 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes marbleRotateCW {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2) rotate(180deg); }
+        }
+        @keyframes marbleRotateCCW {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2) rotate(-180deg); }
         }
 
         /* 💫 GLOW */
@@ -827,7 +955,7 @@
                 // Animasyon başlat
                 setAnimatingPit(pitIndex);
                 
-                // 300ms sonra landing animasyonu için simüle edilen pit'leri hesapla
+                // 400ms sonra landing animasyonu için simüle edilen pit'leri hesapla (yeni animasyon süresi)
                 setTimeout(() => {
                     setAnimatingPit(null);
                     // Basit bir simülasyon: taşların gideceği yerleri tahmin et
@@ -842,11 +970,11 @@
                     // Asıl hamleyi yap
                     onMove(pitIndex);
                     
-                    // Landing animasyonunu temizle
+                    // Landing animasyonunu temizle (yeni animasyon süresi)
                     setTimeout(() => {
                         setLandingPits([]);
-                    }, 400);
-                }, 300);
+                    }, 700);
+                }, 400);
             };
 
             const Pit = ({ count, owner, store, onClick, active, pitIndex }) => {
@@ -1032,16 +1160,19 @@
             const [rotationDirection, setRotationDirection] = React.useState(null);
 
             const handleRotate = (qId, clockwise) => {
+                // Sadece saat yönünde dönüş - kullanıcı hangi butona basarsa bassın
+                const rotateClockwise = true; // Her zaman saat yönünde döndür
+                
                 // Animasyonu başlat
                 setRotatingQuadrant(qId);
-                setRotationDirection(clockwise ? 'cw' : 'ccw');
+                setRotationDirection('cw'); // Her zaman saat yönünde
                 
-                // Animasyon bitince gerçek döndürmeyi yap
+                // Animasyon bitince gerçek döndürmeyi yap (yeni animasyon süresi)
                 setTimeout(() => {
-                    onRotate(qId, clockwise);
+                    onRotate(qId, rotateClockwise); // Her zaman clockwise=true
                     setRotatingQuadrant(null);
                     setRotationDirection(null);
-                }, 600);
+                }, 800);
             };
 
             const getQuadrantCells = (qId) => {
@@ -1059,11 +1190,19 @@
                     ? (rotationDirection === 'cw' ? 'rotating-cw' : 'rotating-ccw')
                     : '';
                 
+                // Oyuncunun son taşı koyduğu quadrant'ı bul
+                const lastPlacedQuadrant = game.lastPlaced !== null && game.lastPlaced !== undefined
+                    ? [0, 1, 2, 3].find(q => getQuadrantCells(q).includes(game.lastPlaced))
+                    : null;
+                const isQuadrantWithLastMove = lastPlacedQuadrant === qId;
+                
                 return (
                     <div className="relative group">
                         <div className={`grid grid-cols-3 gap-1 p-2 rounded-xl transition-all duration-300 
                             ${canRotate 
-                                ? 'bg-gradient-to-br from-purple-600/50 to-pink-600/50 ring-2 ring-purple-400 animate-pulse' 
+                                ? isQuadrantWithLastMove
+                                    ? 'bg-gradient-to-br from-yellow-500/70 to-orange-600/70 ring-4 ring-yellow-300 animate-pulse shadow-lg shadow-yellow-500/50' 
+                                    : 'bg-gradient-to-br from-purple-600/50 to-pink-600/50 ring-2 ring-purple-400 animate-pulse'
                                 : 'bg-white/10'
                             }
                             ${rotClass}
@@ -1080,7 +1219,7 @@
                                         className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center 
                                             bg-gradient-to-br from-slate-800 to-slate-900 transition-all duration-200
                                             ${canPlace ? 'hover:from-slate-700 hover:to-slate-800 cursor-pointer hover:scale-105' : ''}
-                                            ${isLastPlaced ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-transparent' : ''}
+                                            ${isLastPlaced ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-transparent animate-pulse' : ''}
                                         `}
                                     >
                                         {cell !== 0 && (
@@ -1099,20 +1238,20 @@
                         
                         {canRotate && !isRotating && (
                             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
-                                <div className="flex gap-2 bg-black/80 backdrop-blur p-2 rounded-xl">
-                                    <button 
-                                        onClick={() => handleRotate(qId, false)} 
-                                        className="btn-fun btn-warning py-2 px-3 text-sm"
-                                        title="Sola Döndür"
-                                    >
-                                        <i className="fas fa-undo"></i>
-                                    </button>
+                                <div className="bg-black/90 backdrop-blur-md p-3 rounded-2xl border-2 border-purple-400 shadow-2xl">
                                     <button 
                                         onClick={() => handleRotate(qId, true)} 
-                                        className="btn-fun btn-success py-2 px-3 text-sm"
-                                        title="Sağa Döndür"
+                                        className={`btn-fun py-3 px-5 text-base font-bold shadow-2xl flex items-center gap-2 transition-all
+                                            ${isQuadrantWithLastMove 
+                                                ? 'bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-black ring-4 ring-yellow-300 animate-bounce' 
+                                                : 'btn-success'
+                                            }
+                                        `}
+                                        title="Saat Yönünde Döndür ⟳"
                                     >
-                                        <i className="fas fa-redo"></i>
+                                        <i className="fas fa-redo text-xl"></i>
+                                        <span>{isQuadrantWithLastMove ? 'Çevir!' : 'Döndür'}</span>
+                                        <i className="fas fa-arrow-right"></i>
                                     </button>
                                 </div>
                             </div>
