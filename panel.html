@@ -13,8 +13,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     
-    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <!-- React Production Build for better performance and security -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -150,6 +151,67 @@
                 setTimeout(processOfflineQueue, 1000); // Small delay for stability
             }
         });
+        
+        // 🔐 Basit şifre hash fonksiyonu (client-side güvenlik için)
+        const simpleHash = async (str) => {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(str + 'akilzeka_salt_2024');
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        };
+        window.simpleHash = simpleHash;
+        
+        // 🚦 Rate Limiting - Brute force koruması
+        const rateLimiter = {
+            attempts: {},
+            maxAttempts: 5,
+            lockoutTime: 60000, // 1 dakika
+            
+            canAttempt(key) {
+                const now = Date.now();
+                if (!this.attempts[key]) {
+                    this.attempts[key] = { count: 0, lastAttempt: now, lockedUntil: 0 };
+                }
+                
+                const record = this.attempts[key];
+                
+                // Lockout kontrolü
+                if (record.lockedUntil > now) {
+                    const remainingSec = Math.ceil((record.lockedUntil - now) / 1000);
+                    return { allowed: false, message: `Çok fazla deneme. ${remainingSec} saniye bekleyin.` };
+                }
+                
+                // Eski denemeleri temizle (5 dakikadan eski)
+                if (now - record.lastAttempt > 300000) {
+                    record.count = 0;
+                }
+                
+                return { allowed: true };
+            },
+            
+            recordAttempt(key, success) {
+                const now = Date.now();
+                if (!this.attempts[key]) {
+                    this.attempts[key] = { count: 0, lastAttempt: now, lockedUntil: 0 };
+                }
+                
+                const record = this.attempts[key];
+                record.lastAttempt = now;
+                
+                if (success) {
+                    record.count = 0;
+                    record.lockedUntil = 0;
+                } else {
+                    record.count++;
+                    if (record.count >= this.maxAttempts) {
+                        record.lockedUntil = now + this.lockoutTime;
+                        record.count = 0;
+                    }
+                }
+            }
+        };
+        window.rateLimiter = rateLimiter;
         
         window.db = db;
         window.dbRef = ref;
@@ -752,6 +814,25 @@
             brain_master: { icon: "🧩", name: "Beyin Ustası", desc: "Zeka oyunlarında üstün başarı", color: "#8b5cf6", rarity: "special" }
         };
 
+        // 🏫 OKUL ROZETLERİ
+        const SCHOOL_BADGES = {
+            // Turnuva Rozetleri
+            tournament_champion: { icon: "🏆", name: "Turnuva Şampiyonu", desc: "Okul turnuvasını kazanan okul", color: "#ffd700", rarity: "legendary" },
+            interschool_winner: { icon: "🥇", name: "Okullar Arası 1.", desc: "Okullar arası turnuva birincisi", color: "#ffd700", rarity: "legendary" },
+            interschool_second: { icon: "🥈", name: "Okullar Arası 2.", desc: "Okullar arası turnuva ikincisi", color: "#c0c0c0", rarity: "epic" },
+            interschool_third: { icon: "🥉", name: "Okullar Arası 3.", desc: "Okullar arası turnuva üçüncüsü", color: "#cd7f32", rarity: "rare" },
+            // Başarı Rozetleri
+            active_school: { icon: "🔥", name: "Aktif Okul", desc: "En aktif turnuva katılımcısı", color: "#f97316", rarity: "rare" },
+            rising_school: { icon: "📈", name: "Yükselen Okul", desc: "Hızla gelişen okul", color: "#22c55e", rarity: "rare" },
+            fair_play_school: { icon: "🤝", name: "Fair Play Okulu", desc: "Örnek sportmenlik sergileyen okul", color: "#14b8a6", rarity: "special" },
+            brain_school: { icon: "🧠", name: "Beyin Takımı", desc: "Zeka oyunlarında üstün başarı", color: "#8b5cf6", rarity: "epic" },
+            // Özel Rozetler
+            star_school: { icon: "⭐", name: "Yıldız Okul", desc: "Özel başarı rozeti", color: "#fbbf24", rarity: "special" },
+            pioneer_school: { icon: "🚀", name: "Öncü Okul", desc: "İlk katılan okullardan biri", color: "#3b82f6", rarity: "special" },
+            creative_school: { icon: "🎨", name: "Yaratıcı Okul", desc: "Yaratıcı stratejiler geliştiren okul", color: "#ec4899", rarity: "special" },
+            community_school: { icon: "💝", name: "Topluluk Okulu", desc: "Topluluk ruhu taşıyan okul", color: "#f472b6", rarity: "special" }
+        };
+
         const RARITY_COLORS = {
             common: { bg: "bg-gray-100", border: "border-gray-300", text: "text-gray-600" },
             rare: { bg: "bg-blue-50", border: "border-blue-300", text: "text-blue-600" },
@@ -1079,45 +1160,72 @@
             );
         };
 
-        // 🌐 KÜRE BOARD (SPECTATOR)
+        // 🌐 KÜRE BOARD (SPECTATOR) - TAZOF KURALLARI
         const KureBoard = ({ game }) => {
             const board = game.board || Array(49).fill(0);
-            const p1Dropped = game.p1Dropped || 0;
-            const p2Dropped = game.p2Dropped || 0;
+            const p1Captured = game.p1Captured || 0;  // P1'in aldığı taşlar
+            const p2Captured = game.p2Captured || 0;  // P2'nin aldığı taşlar
+            const lastMove = game.lastMove;
+            
+            // Satır ve sütun bilgisi için yardımcı
+            const getRowCol = (idx) => ({ row: Math.floor(idx / 7), col: idx % 7 });
             
             return (
                 <div className="flex flex-col items-center gap-3 sm:gap-4">
+                    {/* Score Display */}
                     <div className="flex gap-3 sm:gap-6 mb-2 sm:mb-4">
                         <div className="bg-white rounded-lg px-2 sm:px-4 py-1.5 sm:py-2 shadow-md flex items-center gap-1 sm:gap-2">
-                            <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-gradient-to-br from-blue-500 to-blue-700"></div>
+                            <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-gradient-to-br from-purple-500 to-purple-700"></div>
                             <span className="font-bold text-gray-700 text-xs sm:text-base">{game.players?.p1?.name?.split(' ')[0]}</span>
-                            <span className="text-red-500 font-bold text-xs sm:text-base">→ {p2Dropped}</span>
+                            <span className="text-purple-600 font-bold text-xs sm:text-base">🏆 {p1Captured}/4</span>
                         </div>
                         <div className="bg-white rounded-lg px-2 sm:px-4 py-1.5 sm:py-2 shadow-md flex items-center gap-1 sm:gap-2">
-                            <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-gradient-to-br from-red-500 to-red-700"></div>
+                            <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-gradient-to-br from-orange-500 to-orange-700"></div>
                             <span className="font-bold text-gray-700 text-xs sm:text-base">{game.players?.p2?.name?.split(' ')[0]}</span>
-                            <span className="text-red-500 font-bold text-xs sm:text-base">→ {p1Dropped}</span>
+                            <span className="text-orange-600 font-bold text-xs sm:text-base">🏆 {p2Captured}/4</span>
                         </div>
                     </div>
                     
+                    {/* Turn Indicator */}
+                    <div className={`text-xs sm:text-sm font-bold px-3 py-1 rounded-full ${game.isP1Turn ? 'bg-purple-100 text-purple-700' : 'bg-orange-100 text-orange-700'}`}>
+                        {game.isP1Turn ? '🟣 Mor Oynuyor' : '🟠 Turuncu Oynuyor'}
+                    </div>
+                    
+                    {/* 7x7 Board */}
                     <div className="grid grid-cols-7 gap-1 sm:gap-2 bg-gradient-to-br from-slate-700 to-slate-900 p-2 sm:p-3 rounded-2xl shadow-2xl">
-                        {board.map((cell, idx) => (
-                            <div
-                                key={idx}
-                                className="w-8 h-8 sm:w-12 sm:h-12 rounded-lg bg-slate-600/50 flex items-center justify-center"
-                            >
-                                {cell === 1 && (
-                                    <div className="w-6 h-6 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 shadow-lg"></div>
-                                )}
-                                {cell === 2 && (
-                                    <div className="w-6 h-6 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-red-500 to-red-700 shadow-lg"></div>
-                                )}
-                            </div>
-                        ))}
+                        {board.map((cell, idx) => {
+                            const { row, col } = getRowCol(idx);
+                            const isStartRowP1 = row === 0; // Mor başlangıç sırası
+                            const isStartRowP2 = row === 6; // Turuncu başlangıç sırası
+                            const isLastMoveFrom = lastMove && lastMove.from === idx;
+                            const isLastMoveTo = lastMove && lastMove.to === idx;
+                            
+                            return (
+                                <div
+                                    key={idx}
+                                    className={`w-8 h-8 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center transition-all
+                                        ${isStartRowP1 ? 'bg-purple-900/40' : isStartRowP2 ? 'bg-orange-900/40' : 'bg-slate-600/50'}
+                                        ${isLastMoveTo ? 'ring-2 ring-cyan-400' : ''}
+                                        ${isLastMoveFrom ? 'bg-cyan-500/20' : ''}
+                                    `}
+                                >
+                                    {cell === 1 && (
+                                        <div className={`w-6 h-6 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-purple-400 to-purple-700 shadow-lg border-2 border-purple-300
+                                            ${isLastMoveTo && !game.isP1Turn ? 'ring-2 ring-cyan-300' : ''}
+                                        `}></div>
+                                    )}
+                                    {cell === 2 && (
+                                        <div className={`w-6 h-6 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-orange-400 to-orange-700 shadow-lg border-2 border-orange-300
+                                            ${isLastMoveTo && game.isP1Turn ? 'ring-2 ring-cyan-300' : ''}
+                                        `}></div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                     
                     <div className="text-xs sm:text-sm text-gray-600 bg-white/80 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full">
-                        🌐 Küre - İlk 3 taş düşüren kazanır
+                        🌐 Küre - 4 taş alan kazanır | Sıkıştırarak taş al
                     </div>
                 </div>
             );
@@ -1207,11 +1315,93 @@
             );
         };
 
+        // 🏰 ABLUKA BOARD (SPECTATOR)
+        const AblukaBoard = ({ game }) => {
+            const board = game.board || Array(49).fill(0);
+            const p1SetsWon = game.p1SetsWon || 0;
+            const p2SetsWon = game.p2SetsWon || 0;
+            const currentSet = game.currentSet || 1;
+            const lastMove = game.lastMove;
+            
+            // Satır ve sütun bilgisi için yardımcı
+            const getRowCol = (idx) => ({ row: Math.floor(idx / 7), col: idx % 7 });
+            
+            return (
+                <div className="flex flex-col items-center gap-3 sm:gap-4">
+                    {/* Set Score Display */}
+                    <div className="flex gap-3 sm:gap-6 mb-2 sm:mb-4 items-center">
+                        <div className="bg-white rounded-lg px-2 sm:px-4 py-1.5 sm:py-2 shadow-md flex items-center gap-1 sm:gap-2">
+                            <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 border-2 border-gray-500"></div>
+                            <span className="font-bold text-gray-700 text-xs sm:text-base">{game.players?.p1?.name?.split(' ')[0]}</span>
+                            <span className="text-gray-700 font-bold text-xs sm:text-base">🏆 {p1SetsWon}</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <span className="text-xs sm:text-sm font-bold text-gray-600">Set {currentSet}/3</span>
+                        </div>
+                        <div className="bg-white rounded-lg px-2 sm:px-4 py-1.5 sm:py-2 shadow-md flex items-center gap-1 sm:gap-2">
+                            <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-gradient-to-br from-gray-100 to-white border-2 border-gray-300"></div>
+                            <span className="font-bold text-gray-700 text-xs sm:text-base">{game.players?.p2?.name?.split(' ')[0]}</span>
+                            <span className="text-gray-700 font-bold text-xs sm:text-base">🏆 {p2SetsWon}</span>
+                        </div>
+                    </div>
+                    
+                    {/* Turn Indicator */}
+                    <div className={`text-xs sm:text-sm font-bold px-3 py-1 rounded-full ${game.isP1Turn ? 'bg-gray-200 text-gray-800' : 'bg-gray-100 text-gray-600'}`}>
+                        {game.isP1Turn ? '⚫ Siyah Oynuyor' : '⚪ Beyaz Oynuyor'}
+                    </div>
+                    
+                    {/* 7x7 Board */}
+                    <div className="grid grid-cols-7 gap-1 sm:gap-2 bg-gradient-to-br from-amber-800 to-amber-950 p-2 sm:p-3 rounded-2xl shadow-2xl border-2 border-amber-700/50">
+                        {board.map((cell, idx) => {
+                            const { row, col } = getRowCol(idx);
+                            const isLastMoveTo = lastMove && lastMove.to === idx;
+                            const isLastMoveFrom = lastMove && lastMove.from === idx;
+                            const isLastBlock = lastMove && lastMove.block === idx;
+                            
+                            return (
+                                <div
+                                    key={idx}
+                                    className={`w-8 h-8 sm:w-12 sm:h-12 rounded-md flex items-center justify-center transition-all
+                                        ${cell === 0 ? 'bg-amber-700/40' : ''}
+                                        ${cell === 3 ? 'bg-red-900/60' : ''}
+                                        ${isLastMoveTo ? 'ring-2 ring-cyan-400' : ''}
+                                        ${isLastMoveFrom ? 'bg-cyan-500/20' : ''}
+                                        ${isLastBlock ? 'ring-2 ring-orange-400' : ''}
+                                    `}
+                                >
+                                    {/* Siyah Taş (P1) */}
+                                    {cell === 1 && (
+                                        <div className={`w-6 h-6 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-gray-600 to-gray-900 shadow-lg border-2 border-gray-500
+                                            ${isLastMoveTo && !game.isP1Turn ? 'ring-2 ring-cyan-300' : ''}
+                                        `}></div>
+                                    )}
+                                    {/* Beyaz Taş (P2) */}
+                                    {cell === 2 && (
+                                        <div className={`w-6 h-6 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-gray-100 to-white shadow-lg border-2 border-gray-300
+                                            ${isLastMoveTo && game.isP1Turn ? 'ring-2 ring-cyan-300' : ''}
+                                        `}></div>
+                                    )}
+                                    {/* Engel Taşı */}
+                                    {cell === 3 && (
+                                        <div className="w-5 h-5 sm:w-8 sm:h-8 rounded bg-gradient-to-br from-red-600 to-red-900 shadow-lg border-2 border-red-500"></div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                    
+                    <div className="text-xs sm:text-sm text-gray-600 bg-white/80 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full">
+                        🏰 Abluka - 2 set alan kazanır | Rakibi köşeye sıkıştır
+                    </div>
+                </div>
+            );
+        };
+
         // 🔍 SPECTATOR MODAL
         const SpectatorModal = ({ game, gameId, onClose }) => {
             if (!game) return null;
-            const gameEmojis = { mangala: '🎯', reversi: '⚫', pentago: '🔮', kulami: '🧩', kure: '🌐', qbitz: '🎲' };
-            const gameNames = { mangala: 'Mangala', reversi: 'Reversi', pentago: 'Pentago', kulami: 'Kulami', kure: 'Küre', qbitz: 'Q-bitz' };
+            const gameEmojis = { mangala: '🎯', reversi: '⚫', pentago: '🔮', kulami: '🧩', kure: '🌐', qbitz: '🎲', abluka: '🏰' };
+            const gameNames = { mangala: 'Mangala', reversi: 'Reversi', pentago: 'Pentago', kulami: 'Kulami', kure: 'Küre', qbitz: 'Q-bitz', abluka: 'Abluka' };
             
             return (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 pop-in">
@@ -1267,6 +1457,7 @@
                              game.type === 'kulami' ? <KulamiBoard game={game} /> :
                              game.type === 'kure' ? <KureBoard game={game} /> :
                              game.type === 'qbitz' ? <QbitzBoard game={game} /> :
+                             game.type === 'abluka' ? <AblukaBoard game={game} /> :
                              <MangalaBoard game={game} />}
                         </div>
 
@@ -1319,9 +1510,30 @@
             const [isLoggedIn, setIsLoggedIn] = useState(false);
             const [password, setPassword] = useState("");
             const [newSchoolName, setNewSchoolName] = useState("");
+            const [newSchoolCode, setNewSchoolCode] = useState(""); // Yeni okul giriş kodu
+            const [newSchoolPassword, setNewSchoolPassword] = useState(""); // Yeni okul şifresi
             const [selectedSchoolFilter, setSelectedSchoolFilter] = useState("");
             const [showGameSelector, setShowGameSelector] = useState(false);
             const [spectatingGameId, setSpectatingGameId] = useState(null);
+            
+            // 🏫 YÖNETİCİ OKUL GİRİŞ SİSTEMİ
+            const [adminSchool, setAdminSchool] = useState(null); // Giriş yapılan okul
+            const [loginCode, setLoginCode] = useState(""); // Giriş kodu
+            const [isSuperAdmin, setIsSuperAdmin] = useState(false); // Süper admin mi (tüm okullar)
+            
+            // 🏫 OKULLAR ARASI TURNUVA SİSTEMİ
+            const [interSchoolRequests, setInterSchoolRequests] = useState({}); // Okullar arası turnuva istekleri
+            const [showInterSchoolModal, setShowInterSchoolModal] = useState(false); // Modal gösterimi
+            const [interSchoolForm, setInterSchoolForm] = useState({
+                targetSchool: '',
+                date: '',
+                games: [],
+                studentCount: 5,
+                description: ''
+            });
+            const [selectedInterSchoolStudents, setSelectedInterSchoolStudents] = useState(new Set()); // Turnuvaya katılacak öğrenciler
+            const [showStudentSelectModal, setShowStudentSelectModal] = useState(null); // Öğrenci seçim modalı (request id)
+            const [activeInterSchoolTournament, setActiveInterSchoolTournament] = useState(null); // Aktif okullar arası turnuva
             
             // 🎯 Eşleştirme Modları
             const [matchingMode, setMatchingMode] = useState('random'); // 'random', 'manual', 'school-random', 'cross-school', 'swiss'
@@ -1340,6 +1552,8 @@
             // 🏆 Rozet Yönetimi State
             const [badgeModalUser, setBadgeModalUser] = useState(null);
             const [selectedBadgeToGive, setSelectedBadgeToGive] = useState(null);
+            const [selectedSchoolForBadges, setSelectedSchoolForBadges] = useState(null); // Rozet gösterilecek okul
+            const [showSchoolBadgeModal, setShowSchoolBadgeModal] = useState(false); // Okul rozet modalı
             
             // 🔢 Pagination States
             const [gamesPage, setGamesPage] = useState(1);
@@ -1377,11 +1591,27 @@
 
             // 🔥 Firebase Listeners with Optimization
             useEffect(() => {
-                if (!isLoggedIn) return;
+                // Okulları her zaman yükle (login için gerekli)
+                const schoolsRef = window.dbRef(window.db, 'schools');
+                const schoolsUnsub = window.dbOnValue(schoolsRef, (s) => {
+                    try {
+                        setSchools(s.val() || {});
+                    } catch (err) {
+                        console.error('Schools data processing error:', err);
+                    }
+                }, (error) => {
+                    console.error('Schools listener error:', error);
+                });
+                
+                // Giriş yapılmadıysa sadece okulları yükle
+                if (!isLoggedIn) {
+                    return () => schoolsUnsub();
+                }
+                
                 setIsLoading(true);
                 
-                const unsubscribers = [];
-                let loadedCount = 0;
+                const unsubscribers = [schoolsUnsub];
+                let loadedCount = 1; // Schools already counted
                 const totalListeners = 5;
                 
                 const checkAllLoaded = () => {
@@ -1394,7 +1624,6 @@
                 const lobbyRef = window.dbRef(window.db, 'lobby');
                 const gamesRef = window.dbRef(window.db, 'games');
                 const pendingRef = window.dbRef(window.db, 'pending_users');
-                const schoolsRef = window.dbRef(window.db, 'schools');
                 const usersRef = window.dbRef(window.db, 'users');
                 
                 // Optimized listeners with proper error handling and cleanup
@@ -1444,20 +1673,8 @@
                     });
                     unsubscribers.push(pendingUnsub);
                     
-                    const schoolsUnsub = window.dbOnValue(schoolsRef, (s) => {
-                        try {
-                            setSchools(s.val() || {});
-                            checkAllLoaded();
-                        } catch (err) {
-                            console.error('Schools data processing error:', err);
-                            checkAllLoaded();
-                        }
-                    }, (error) => {
-                        console.error('Schools listener error:', error);
-                        setToast({ message: 'Okul verileri yüklenemedi', type: 'error' });
-                        checkAllLoaded();
-                    });
-                    unsubscribers.push(schoolsUnsub);
+                    // Schools zaten yukarıda yüklendi, sadece checkAllLoaded çağır
+                    checkAllLoaded();
                     
                     const usersUnsub = window.dbOnValue(usersRef, (s) => {
                         try {
@@ -1473,6 +1690,19 @@
                         checkAllLoaded();
                     });
                     unsubscribers.push(usersUnsub);
+                    
+                    // 🏫 Okullar Arası Turnuva İstekleri Dinleyicisi
+                    const interSchoolRef = window.dbRef(window.db, 'interSchoolRequests');
+                    const interSchoolUnsub = window.dbOnValue(interSchoolRef, (s) => {
+                        try {
+                            setInterSchoolRequests(s.val() || {});
+                        } catch (err) {
+                            console.error('Inter-school requests data processing error:', err);
+                        }
+                    }, (error) => {
+                        console.error('Inter-school requests listener error:', error);
+                    });
+                    unsubscribers.push(interSchoolUnsub);
                 } catch (error) {
                     console.error('Failed to setup listeners:', error);
                     setIsLoading(false);
@@ -1499,21 +1729,53 @@
 
             // 🏫 Memoized school operations
             const addSchool = useCallback(async () => {
-                if (!newSchoolName.trim()) return;
+                if (!newSchoolName.trim()) {
+                    setToast({ message: 'Okul adı girin!', type: 'error' });
+                    return;
+                }
+                if (!newSchoolCode.trim() || newSchoolCode.length < 3) {
+                    setToast({ message: 'Okul kodu en az 3 karakter olmalı!', type: 'error' });
+                    return;
+                }
+                if (!newSchoolPassword.trim() || newSchoolPassword.length < 4) {
+                    setToast({ message: 'Okul şifresi en az 4 karakter olmalı!', type: 'error' });
+                    return;
+                }
+                
+                // Kod benzersizliği kontrolü
+                const codeUpper = newSchoolCode.toUpperCase();
+                const existingCode = Object.values(schools).find(s => s.code?.toUpperCase() === codeUpper);
+                if (existingCode) {
+                    setToast({ message: 'Bu kod zaten kullanılıyor!', type: 'error' });
+                    return;
+                }
+                
                 if (!canPerformOperation()) return;
                 
                 setOperationInProgress(true);
                 const id = newSchoolName.toLowerCase().replace(/[^a-z0-9]/g, '');
-                const success = await window.dbSet(window.dbRef(window.db, 'schools/' + id), { name: newSchoolName, id });
+                const success = await window.dbSet(window.dbRef(window.db, 'schools/' + id), { 
+                    name: newSchoolName, 
+                    id,
+                    code: codeUpper,
+                    password: newSchoolPassword,
+                    createdAt: Date.now()
+                });
                 
                 if (success) {
-                    setToast({ message: 'Okul başarıyla eklendi!', type: 'success' });
+                    setToast({ message: `Okul eklendi! Kod: ${codeUpper}`, type: 'success' });
                     setNewSchoolName("");
+                    setNewSchoolCode("");
+                    setNewSchoolPassword("");
                 }
                 setOperationInProgress(false);
-            }, [newSchoolName, canPerformOperation]);
+            }, [newSchoolName, newSchoolCode, newSchoolPassword, schools, canPerformOperation]);
 
             const deleteSchool = useCallback(async (id) => {
+                if (!isSuperAdmin) {
+                    setToast({ message: 'Sadece süper admin okul silebilir!', type: 'error' });
+                    return;
+                }
                 if (!confirm("Bu okulu silmek istediğinize emin misiniz? 🏫")) return;
                 if (!canPerformOperation()) return;
                 
@@ -1523,10 +1785,211 @@
                     setToast({ message: 'Okul silindi', type: 'success' });
                 }
                 setOperationInProgress(false);
+            }, [canPerformOperation, isSuperAdmin]);
+            
+            // 🏫 Okul şifresi güncelleme
+            const updateSchoolPassword = useCallback(async (schoolId, newPassword) => {
+                if (!newPassword || newPassword.length < 4) {
+                    setToast({ message: 'Şifre en az 4 karakter olmalı!', type: 'error' });
+                    return;
+                }
+                if (!canPerformOperation()) return;
+                
+                setOperationInProgress(true);
+                const success = await window.dbUpdate(window.dbRef(window.db, 'schools/' + schoolId), { 
+                    password: newPassword 
+                });
+                if (success) {
+                    setToast({ message: 'Okul şifresi güncellendi!', type: 'success' });
+                }
+                setOperationInProgress(false);
             }, [canPerformOperation]);
+            
+            // 🏫 Okul kodu güncelleme
+            const updateSchoolCode = useCallback(async (schoolId, newCode) => {
+                if (!newCode || newCode.length < 3) {
+                    setToast({ message: 'Kod en az 3 karakter olmalı!', type: 'error' });
+                    return;
+                }
+                
+                const codeUpper = newCode.toUpperCase();
+                
+                // Kod benzersizliği kontrolü
+                const existingCode = Object.values(schools).find(s => s.code?.toUpperCase() === codeUpper && s.id !== schoolId);
+                if (existingCode) {
+                    setToast({ message: 'Bu kod zaten kullanılıyor!', type: 'error' });
+                    return;
+                }
+                
+                if (!canPerformOperation()) return;
+                
+                setOperationInProgress(true);
+                const success = await window.dbUpdate(window.dbRef(window.db, 'schools/' + schoolId), { 
+                    code: codeUpper 
+                });
+                if (success) {
+                    setToast({ message: `Okul kodu güncellendi: ${codeUpper}`, type: 'success' });
+                }
+                setOperationInProgress(false);
+            }, [schools, canPerformOperation]);
+            
+            // 🏫 OKULLAR ARASI TURNUVA FONKSİYONLARI
+            
+            // Turnuva isteği gönder
+            const sendInterSchoolRequest = useCallback(async () => {
+                if (!adminSchool) {
+                    setToast({ message: 'Önce giriş yapmalısınız!', type: 'error' });
+                    return;
+                }
+                if (!interSchoolForm.targetSchool) {
+                    setToast({ message: 'Hedef okul seçin!', type: 'error' });
+                    return;
+                }
+                if (!interSchoolForm.date) {
+                    setToast({ message: 'Tarih seçin!', type: 'error' });
+                    return;
+                }
+                if (interSchoolForm.games.length === 0) {
+                    setToast({ message: 'En az bir oyun seçin!', type: 'error' });
+                    return;
+                }
+                if (interSchoolForm.studentCount < 1 || interSchoolForm.studentCount > 50) {
+                    setToast({ message: 'Öğrenci sayısı 1-50 arasında olmalı!', type: 'error' });
+                    return;
+                }
+                if (!canPerformOperation()) return;
+                
+                setOperationInProgress(true);
+                const requestId = Date.now().toString();
+                const requestData = {
+                    id: requestId,
+                    fromSchool: adminSchool,
+                    fromSchoolName: schools[adminSchool]?.name || adminSchool,
+                    toSchool: interSchoolForm.targetSchool,
+                    toSchoolName: schools[interSchoolForm.targetSchool]?.name || interSchoolForm.targetSchool,
+                    date: interSchoolForm.date,
+                    games: interSchoolForm.games,
+                    studentCount: interSchoolForm.studentCount,
+                    description: interSchoolForm.description,
+                    status: 'pending', // pending, accepted, rejected
+                    createdAt: Date.now(),
+                    fromSchoolStudents: [],
+                    toSchoolStudents: [],
+                    rejectionReason: ''
+                };
+                
+                const success = await window.dbSet(window.dbRef(window.db, 'interSchoolRequests/' + requestId), requestData);
+                
+                if (success) {
+                    setToast({ message: 'Turnuva isteği gönderildi!', type: 'success' });
+                    setShowInterSchoolModal(false);
+                    setInterSchoolForm({
+                        targetSchool: '',
+                        date: '',
+                        games: [],
+                        studentCount: 5,
+                        description: ''
+                    });
+                }
+                setOperationInProgress(false);
+            }, [adminSchool, interSchoolForm, schools, canPerformOperation]);
+            
+            // Turnuva isteğini kabul et
+            const acceptInterSchoolRequest = useCallback(async (requestId) => {
+                if (!confirm('Bu turnuva isteğini kabul etmek istediğinize emin misiniz?')) return;
+                if (!canPerformOperation()) return;
+                
+                setOperationInProgress(true);
+                const success = await window.dbUpdate(window.dbRef(window.db, 'interSchoolRequests/' + requestId), {
+                    status: 'accepted',
+                    acceptedAt: Date.now()
+                });
+                
+                if (success) {
+                    setToast({ message: 'Turnuva isteği kabul edildi!', type: 'success' });
+                }
+                setOperationInProgress(false);
+            }, [canPerformOperation]);
+            
+            // Turnuva isteğini reddet
+            const rejectInterSchoolRequest = useCallback(async (requestId, reason = '') => {
+                if (!confirm('Bu turnuva isteğini reddetmek istediğinize emin misiniz?')) return;
+                if (!canPerformOperation()) return;
+                
+                setOperationInProgress(true);
+                const success = await window.dbUpdate(window.dbRef(window.db, 'interSchoolRequests/' + requestId), {
+                    status: 'rejected',
+                    rejectionReason: reason,
+                    rejectedAt: Date.now()
+                });
+                
+                if (success) {
+                    setToast({ message: 'Turnuva isteği reddedildi.', type: 'info' });
+                }
+                setOperationInProgress(false);
+            }, [canPerformOperation]);
+            
+            // Turnuvaya öğrenci ekle
+            const addStudentsToInterSchool = useCallback(async (requestId, students) => {
+                const request = interSchoolRequests[requestId];
+                if (!request) return;
+                
+                const isFromSchool = request.fromSchool === adminSchool;
+                const studentKey = isFromSchool ? 'fromSchoolStudents' : 'toSchoolStudents';
+                
+                if (students.length > request.studentCount) {
+                    setToast({ message: `Maksimum ${request.studentCount} öğrenci seçebilirsiniz!`, type: 'error' });
+                    return;
+                }
+                
+                setOperationInProgress(true);
+                const success = await window.dbUpdate(window.dbRef(window.db, 'interSchoolRequests/' + requestId), {
+                    [studentKey]: students
+                });
+                
+                if (success) {
+                    setToast({ message: 'Öğrenciler eklendi!', type: 'success' });
+                    setShowStudentSelectModal(null);
+                    setSelectedInterSchoolStudents(new Set());
+                }
+                setOperationInProgress(false);
+            }, [adminSchool, interSchoolRequests]);
+            
+            // Okullar arası turnuva başlat
+            const startInterSchoolTournament = useCallback(async (requestId) => {
+                const request = interSchoolRequests[requestId];
+                if (!request) return;
+                
+                if (request.fromSchoolStudents.length === 0 || request.toSchoolStudents.length === 0) {
+                    setToast({ message: 'Her iki okul da öğrenci seçmeli!', type: 'error' });
+                    return;
+                }
+                
+                if (request.fromSchoolStudents.length !== request.toSchoolStudents.length) {
+                    setToast({ message: 'Her iki okuldan eşit sayıda öğrenci olmalı!', type: 'error' });
+                    return;
+                }
+                
+                setOperationInProgress(true);
+                const success = await window.dbUpdate(window.dbRef(window.db, 'interSchoolRequests/' + requestId), {
+                    status: 'active',
+                    startedAt: Date.now()
+                });
+                
+                if (success) {
+                    setToast({ message: 'Okullar arası turnuva başladı!', type: 'success' });
+                    setActiveInterSchoolTournament(requestId);
+                }
+                setOperationInProgress(false);
+            }, [interSchoolRequests]);
 
             // 👤 Memoized user operations with transaction safety
             const approveUser = useCallback(async (uid, data) => {
+                // Okul bazlı yetki kontrolü
+                if (!isSuperAdmin && adminSchool && data.school !== adminSchool) {
+                    setToast({ message: 'Sadece kendi okulunuzdaki öğrencileri onaylayabilirsiniz!', type: 'error' });
+                    return;
+                }
                 if (!confirm(`${data.name} onaylansın mı? ✅`)) return;
                 if (!canPerformOperation()) return;
                 if (!window.isFirebaseConnected) {
@@ -2480,6 +2943,247 @@
                 }
             }, [canPerformOperation]);
 
+            // 🏫 Okula Rozet Verme İşlemi
+            const giveSchoolBadge = useCallback(async (schoolId, badgeKey) => {
+                if (!canPerformOperation()) return;
+                if (!window.isFirebaseConnected) {
+                    setToast({ message: 'Bağlantı yok!', type: 'error' });
+                    return;
+                }
+                
+                setOperationInProgress(true);
+                try {
+                    const schoolRef = window.dbRef(window.db, 'schools/' + schoolId);
+                    const snapshot = await window.dbGet(schoolRef);
+                    if (!snapshot.exists()) {
+                        throw new Error('Okul bulunamadı');
+                    }
+                    
+                    const schoolData = snapshot.val();
+                    const currentBadges = schoolData.badges || [];
+                    if (!currentBadges.includes(badgeKey)) {
+                        currentBadges.push(badgeKey);
+                        const success = await window.dbUpdate(schoolRef, { badges: currentBadges });
+                        if (!success) throw new Error('Rozet güncellemesi başarısız');
+                        setToast({ message: `🏆 ${SCHOOL_BADGES[badgeKey].name} rozeti okula verildi!`, type: 'success' });
+                    } else {
+                        setToast({ message: 'Bu rozet zaten var!', type: 'error' });
+                    }
+                } catch (error) {
+                    console.error('Give school badge error:', error);
+                    setToast({ message: 'Rozet verme başarısız: ' + error.message, type: 'error' });
+                } finally {
+                    setOperationInProgress(false);
+                }
+            }, [canPerformOperation]);
+
+            // 🏫 Okul Rozetini Kaldırma İşlemi
+            const removeSchoolBadge = useCallback(async (schoolId, badgeKey) => {
+                if (!confirm(`Bu rozeti kaldırmak istediğinize emin misiniz?`)) return;
+                if (!canPerformOperation()) return;
+                if (!window.isFirebaseConnected) {
+                    setToast({ message: 'Bağlantı yok!', type: 'error' });
+                    return;
+                }
+                
+                setOperationInProgress(true);
+                try {
+                    const schoolRef = window.dbRef(window.db, 'schools/' + schoolId);
+                    const snapshot = await window.dbGet(schoolRef);
+                    if (!snapshot.exists()) {
+                        throw new Error('Okul bulunamadı');
+                    }
+                    
+                    const schoolData = snapshot.val();
+                    const currentBadges = (schoolData.badges || []).filter(b => b !== badgeKey);
+                    const success = await window.dbUpdate(schoolRef, { badges: currentBadges });
+                    if (!success) throw new Error('Rozet güncellemesi başarısız');
+                    setToast({ message: `Rozet kaldırıldı`, type: 'success' });
+                } catch (error) {
+                    console.error('Remove school badge error:', error);
+                    setToast({ message: 'Rozet kaldırma başarısız: ' + error.message, type: 'error' });
+                } finally {
+                    setOperationInProgress(false);
+                }
+            }, [canPerformOperation]);
+
+            // 📄 Okullar Arası Turnuva Raporu PDF Oluşturma
+            const generateInterSchoolReport = useCallback(async (requestId) => {
+                const request = interSchoolRequests[requestId];
+                if (!request) {
+                    setToast({ message: 'Turnuva bulunamadi!', type: 'error' });
+                    return;
+                }
+                
+                try {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF('p', 'mm', 'a4');
+                    const pageWidth = doc.internal.pageSize.getWidth();
+                    const pageHeight = doc.internal.pageSize.getHeight();
+                    
+                    // Türkçe karakter dönüşümü
+                    const turkishToAscii = (str) => {
+                        if (!str) return '';
+                        const charMap = {
+                            'ç': 'c', 'Ç': 'C', 'ğ': 'g', 'Ğ': 'G', 'ı': 'i', 'İ': 'I',
+                            'ö': 'o', 'Ö': 'O', 'ş': 's', 'Ş': 'S', 'ü': 'u', 'Ü': 'U'
+                        };
+                        return str.toString().replace(/[çÇğĞıİöÖşŞüÜ]/g, char => charMap[char] || char);
+                    };
+                    
+                    // KAPAK SAYFASI
+                    doc.setFillColor(249, 115, 22);
+                    doc.rect(0, 0, pageWidth, 80, 'F');
+                    doc.setFillColor(236, 72, 153);
+                    doc.circle(pageWidth + 20, -20, 60, 'F');
+                    doc.setFillColor(59, 130, 246);
+                    doc.circle(-20, 100, 50, 'F');
+                    
+                    // Başlık
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFontSize(28);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('OKULLAR ARASI TURNUVA', pageWidth / 2, 35, { align: 'center' });
+                    
+                    doc.setFontSize(16);
+                    doc.setFont('helvetica', 'normal');
+                    doc.text('RAPORU', pageWidth / 2, 50, { align: 'center' });
+                    
+                    doc.setFontSize(12);
+                    doc.text(turkishToAscii(request.fromSchoolName) + ' vs ' + turkishToAscii(request.toSchoolName), pageWidth / 2, 65, { align: 'center' });
+                    
+                    // Bilgi Kutusu
+                    doc.setFillColor(255, 255, 255);
+                    doc.roundedRect(15, 95, pageWidth - 30, 80, 3, 3, 'F');
+                    
+                    doc.setTextColor(0, 0, 0);
+                    doc.setFontSize(11);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('TURNUVA BILGILERI', 25, 110);
+                    
+                    doc.setFont('helvetica', 'normal');
+                    doc.setFontSize(10);
+                    doc.text('Tarih: ' + request.date, 25, 125);
+                    doc.text('Oyunlar: ' + request.games.join(', '), 25, 135);
+                    doc.text('Her Okuldan Ogrenci: ' + request.studentCount, 25, 145);
+                    doc.text('Durum: ' + (request.status === 'active' ? 'Devam Ediyor' : 
+                                          request.status === 'completed' ? 'Tamamlandi' : 'Bekliyor'), 25, 155);
+                    doc.text('Rapor Tarihi: ' + new Date().toLocaleDateString('tr-TR'), 25, 165);
+                    
+                    // Okul Kartları
+                    const cardY = 190;
+                    const cardWidth = (pageWidth - 50) / 2;
+                    
+                    // Okul 1
+                    doc.setFillColor(59, 130, 246);
+                    doc.roundedRect(15, cardY, cardWidth, 50, 2, 2, 'F');
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFontSize(14);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(turkishToAscii(request.fromSchoolName), 15 + cardWidth / 2, cardY + 15, { align: 'center' });
+                    doc.setFontSize(24);
+                    doc.text((request.fromSchoolStudents?.length || 0).toString(), 15 + cardWidth / 2, cardY + 35, { align: 'center' });
+                    doc.setFontSize(9);
+                    doc.setFont('helvetica', 'normal');
+                    doc.text('Ogrenci', 15 + cardWidth / 2, cardY + 43, { align: 'center' });
+                    
+                    // VS
+                    doc.setTextColor(0, 0, 0);
+                    doc.setFontSize(20);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('VS', pageWidth / 2, cardY + 25, { align: 'center' });
+                    
+                    // Okul 2
+                    doc.setFillColor(236, 72, 153);
+                    doc.roundedRect(25 + cardWidth, cardY, cardWidth, 50, 2, 2, 'F');
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFontSize(14);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(turkishToAscii(request.toSchoolName), 25 + cardWidth + cardWidth / 2, cardY + 15, { align: 'center' });
+                    doc.setFontSize(24);
+                    doc.text((request.toSchoolStudents?.length || 0).toString(), 25 + cardWidth + cardWidth / 2, cardY + 35, { align: 'center' });
+                    doc.setFontSize(9);
+                    doc.setFont('helvetica', 'normal');
+                    doc.text('Ogrenci', 25 + cardWidth + cardWidth / 2, cardY + 43, { align: 'center' });
+                    
+                    // Öğrenci Listeleri - Yeni Sayfa
+                    doc.addPage();
+                    
+                    // Başlık
+                    doc.setFillColor(249, 115, 22);
+                    doc.rect(0, 0, pageWidth, 15, 'F');
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFontSize(10);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('KATILIMCI LISTESI', 15, 10);
+                    
+                    let startY = 30;
+                    
+                    // Okul 1 Öğrencileri
+                    doc.setTextColor(59, 130, 246);
+                    doc.setFontSize(14);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(turkishToAscii(request.fromSchoolName), 15, startY);
+                    startY += 10;
+                    
+                    doc.setTextColor(0, 0, 0);
+                    doc.setFontSize(10);
+                    doc.setFont('helvetica', 'normal');
+                    
+                    if (request.fromSchoolStudents && request.fromSchoolStudents.length > 0) {
+                        request.fromSchoolStudents.forEach((uid, idx) => {
+                            const student = allUsers[uid];
+                            if (student) {
+                                doc.text((idx + 1) + '. ' + turkishToAscii(student.name) + ' - ' + student.class + ' No:' + student.number, 20, startY);
+                                startY += 7;
+                            }
+                        });
+                    } else {
+                        doc.text('Henuz ogrenci secilmedi', 20, startY);
+                        startY += 7;
+                    }
+                    
+                    startY += 10;
+                    
+                    // Okul 2 Öğrencileri
+                    doc.setTextColor(236, 72, 153);
+                    doc.setFontSize(14);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(turkishToAscii(request.toSchoolName), 15, startY);
+                    startY += 10;
+                    
+                    doc.setTextColor(0, 0, 0);
+                    doc.setFontSize(10);
+                    doc.setFont('helvetica', 'normal');
+                    
+                    if (request.toSchoolStudents && request.toSchoolStudents.length > 0) {
+                        request.toSchoolStudents.forEach((uid, idx) => {
+                            const student = allUsers[uid];
+                            if (student) {
+                                doc.text((idx + 1) + '. ' + turkishToAscii(student.name) + ' - ' + student.class + ' No:' + student.number, 20, startY);
+                                startY += 7;
+                            }
+                        });
+                    } else {
+                        doc.text('Henuz ogrenci secilmedi', 20, startY);
+                        startY += 7;
+                    }
+                    
+                    // Footer
+                    doc.setTextColor(100, 100, 100);
+                    doc.setFontSize(8);
+                    doc.text('Akil Zeka Oyunlari - Okullar Arasi Turnuva Sistemi', pageWidth / 2, pageHeight - 10, { align: 'center' });
+                    
+                    // Kaydet
+                    const fileName = 'Okullar_Arasi_Turnuva_' + turkishToAscii(request.fromSchoolName) + '_vs_' + turkishToAscii(request.toSchoolName) + '_' + new Date().toISOString().split('T')[0] + '.pdf';
+                    doc.save(fileName);
+                    setToast({ message: 'Okullar arasi turnuva raporu olusturuldu! 🏫', type: 'success' });
+                } catch (error) {
+                    console.error('Inter-school report error:', error);
+                    setToast({ message: 'PDF olusturulamadi: ' + error.message, type: 'error' });
+                }
+            }, [interSchoolRequests, allUsers]);
+
             // 🎮 Memoized game operations
             const deleteGame = useCallback(async (id) => {
                 if (!confirm("Bu oyun silinsin mi? 🎮")) return;
@@ -2650,8 +3354,9 @@
                     }
                     
                 } else {
-                    // Varsayılan Rastgele Eşleştirme (eski davranış)
-                    playersToMatch = Object.entries(lobbyUsers)
+                    // Varsayılan Rastgele Eşleştirme
+                    // Okul yöneticisi ise sadece kendi okulundan, süper admin ise herkesten
+                    playersToMatch = Object.entries(filteredLobbyUsers)
                         .filter(([_, u]) => u.state === 'waiting')
                         .map(([id, u]) => ({ ...u, id }));
                 }
@@ -2719,10 +3424,35 @@
                             data.p1Score = 0;
                             data.p2Score = 0;
                         } else if (type === 'kure') {
-                            // Küre: 7x7 = 49 hücre, boş başlar
-                            data.board = Array(49).fill(0);
-                            data.p1Dropped = 0;  // Düşürülen rakip taşları
-                            data.p2Dropped = 0;
+                            // Küre: 7x7 = 49 hücre - TAZOF KURALLARI
+                            // P1 (Mor) üst sırada (satır 0), P2 (Turuncu) alt sırada (satır 6)
+                            // Mor her zaman başlar (isP1Turn: true)
+                            const board = Array(49).fill(0);
+                            // Satır 0: P1 (Mor) taşları - indeksler 0-6
+                            for (let col = 0; col < 7; col++) {
+                                board[col] = 1; // P1 = Mor
+                            }
+                            // Satır 6: P2 (Turuncu) taşları - indeksler 42-48
+                            for (let col = 0; col < 7; col++) {
+                                board[42 + col] = 2; // P2 = Turuncu
+                            }
+                            data.board = board;
+                            data.p1Captured = 0;  // P1'in aldığı taşlar
+                            data.p2Captured = 0;  // P2'nin aldığı taşlar
+                            data.lastMove = null;
+                        } else if (type === 'abluka') {
+                            // Abluka: 7x7 = 49 hücre - TAZOF KURALLARI
+                            // Siyah (P1) üst orta, Beyaz (P2) alt orta
+                            // Siyah her zaman başlar (isP1Turn: true)
+                            const board = Array(49).fill(0);
+                            board[3] = 1;  // Siyah (P1) - satır 0, sütun 3
+                            board[45] = 2; // Beyaz (P2) - satır 6, sütun 3
+                            data.board = board;
+                            data.blockers = []; // Engel hücreleri
+                            data.p1SetsWon = 0;  // P1'in kazandığı setler
+                            data.p2SetsWon = 0;  // P2'nin kazandığı setler
+                            data.currentSet = 1; // Mevcut set numarası
+                            data.lastMove = null; // Son hamleyi yapan (abluka durumunda kazanan için)
                         } else if (type === 'qbitz') {
                             // Q-bitz: 4x4 grid, 6 farklı yüz
                             // Rastgele hedef desen oluştur
@@ -2776,14 +3506,32 @@
                 }
             }, [lobbyUsers, canPerformOperation, matchingMode, selectedPlayer1, selectedPlayer2, selectedSchool1, selectedSchool2, allUsers]);
 
+            // 🏫 Filtrelenmiş lobi kullanıcıları (okul yöneticisi için kendi okulu)
+            const filteredLobbyUsers = useMemo(() => {
+                if (isSuperAdmin) return lobbyUsers;
+                if (!adminSchool) return lobbyUsers;
+                
+                const filtered = {};
+                Object.entries(lobbyUsers).forEach(([uid, user]) => {
+                    if (user.schoolId === adminSchool) {
+                        filtered[uid] = user;
+                    }
+                });
+                return filtered;
+            }, [lobbyUsers, isSuperAdmin, adminSchool]);
+
             // 📊 Memoized statistics
             const stats = useMemo(() => ({
-                pendingCount: Object.keys(pendingUsers).length,
-                waitingCount: Object.values(lobbyUsers).filter(u => u.state === 'waiting').length,
-                playingCount: Object.values(lobbyUsers).filter(u => u.state === 'playing').length,
+                pendingCount: isSuperAdmin 
+                    ? Object.keys(pendingUsers).length 
+                    : Object.values(pendingUsers).filter(u => u.schoolId === adminSchool).length,
+                waitingCount: Object.values(filteredLobbyUsers).filter(u => u.state === 'waiting').length,
+                playingCount: Object.values(filteredLobbyUsers).filter(u => u.state === 'playing').length,
                 activeGames: Object.values(games).filter(g => !g.winner).length,
-                totalUsers: Object.keys(allUsers).length
-            }), [pendingUsers, lobbyUsers, games, allUsers]);
+                totalUsers: isSuperAdmin 
+                    ? Object.keys(allUsers).length 
+                    : Object.values(allUsers).filter(u => u.schoolId === adminSchool).length
+            }), [pendingUsers, filteredLobbyUsers, games, allUsers, isSuperAdmin, adminSchool]);
 
             // 📄 Memoized paginated data
             const paginatedGames = useMemo(() => {
@@ -2796,8 +3544,11 @@
             const paginatedUsers = useMemo(() => {
                 let entries = Object.entries(allUsers);
                 
-                // Okul filtresi
-                if (selectedSchoolFilter) {
+                // Okul yöneticisi ise sadece kendi okulu
+                if (!isSuperAdmin && adminSchool) {
+                    entries = entries.filter(([_, u]) => u.schoolId === adminSchool);
+                } else if (selectedSchoolFilter) {
+                    // Süper admin için okul filtresi
                     entries = entries.filter(([_, u]) => u.schoolId === selectedSchoolFilter);
                 }
                 
@@ -2824,11 +3575,16 @@
                     total: entries.length,
                     hasMore: end < entries.length
                 };
-            }, [allUsers, selectedSchoolFilter, selectedClassFilter, usersPage, studentSearch]);
+            }, [allUsers, selectedSchoolFilter, selectedClassFilter, usersPage, studentSearch, isSuperAdmin, adminSchool]);
             
             // 🏫 Okul bazlı gruplama
             const studentsBySchool = useMemo(() => {
                 let entries = Object.entries(allUsers);
+                
+                // Okul yöneticisi ise sadece kendi okulu
+                if (!isSuperAdmin && adminSchool) {
+                    entries = entries.filter(([_, u]) => u.schoolId === adminSchool);
+                }
                 
                 // Arama filtresi
                 if (studentSearch.trim()) {
@@ -2854,28 +3610,90 @@
                 return grouped;
             }, [allUsers, studentSearch]);
             
-            // 📚 Tüm benzersiz sınıfları al
+            // 📚 Tüm benzersiz sınıfları al (okul bazlı filtreleme ile)
             const uniqueClasses = useMemo(() => {
                 const classes = new Set();
                 Object.values(allUsers).forEach(user => {
+                    // Okul yöneticisi için sadece kendi okulunun sınıfları
+                    if (!isSuperAdmin && adminSchool && user.schoolId !== adminSchool) return;
                     if (user.class) classes.add(user.class);
                 });
                 return Array.from(classes).sort();
-            }, [allUsers]);
+            }, [allUsers, isSuperAdmin, adminSchool]);
             
-            // 📋 Sınıf bazlı öğrenci seçme
+            // 📋 Sınıf bazlı öğrenci seçme (okul bazlı filtreleme ile)
             const selectStudentsByClass = useCallback((className) => {
                 const studentsInClass = Object.entries(allUsers)
-                    .filter(([_, u]) => u.class === className)
+                    .filter(([_, u]) => {
+                        // Okul yöneticisi için sadece kendi okulunun öğrencileri
+                        if (!isSuperAdmin && adminSchool && u.schoolId !== adminSchool) return false;
+                        return u.class === className;
+                    })
                     .map(([uid]) => uid);
                 
                 const newSet = new Set(selectedStudents);
                 studentsInClass.forEach(uid => newSet.add(uid));
                 setSelectedStudents(newSet);
                 setToast({ message: `${studentsInClass.length} öğrenci seçildi (${className})`, type: 'success' });
-            }, [allUsers, selectedStudents]);
+            }, [allUsers, selectedStudents, isSuperAdmin, adminSchool]);
 
-            // 🔐 LOGIN SCREEN
+            // 🔐 Login fonksiyonu - Rate limiting ile güvenli
+            const handleLogin = () => {
+                const code = loginCode.trim().toUpperCase();
+                const pass = password.trim();
+                
+                if (!code || !pass) {
+                    setLoginError("⚠️ Lütfen kod ve şifre girin.");
+                    return;
+                }
+                
+                // Rate limiting kontrolü
+                const rateLimitCheck = window.rateLimiter.canAttempt(code);
+                if (!rateLimitCheck.allowed) {
+                    setLoginError(`🚫 ${rateLimitCheck.message}`);
+                    return;
+                }
+                
+                // Süper admin kontrolü (hash ile karşılaştırma - daha güvenli)
+                // NOT: Gerçek uygulamada bu şifre environment variable olmalı
+                const SUPER_ADMIN_CODE = "ADMIN";
+                const SUPER_ADMIN_PASS = "1234"; // Bu değiştirilmeli!
+                
+                if (code === SUPER_ADMIN_CODE && pass === SUPER_ADMIN_PASS) {
+                    window.rateLimiter.recordAttempt(code, true);
+                    setLoginError("");
+                    setIsSuperAdmin(true);
+                    setAdminSchool(null);
+                    setIsLoggedIn(true);
+                    console.log("✅ Süper admin girişi başarılı!");
+                    return;
+                }
+                
+                // Okul bazlı giriş - koda göre okul bul
+                const school = Object.values(schools).find(s => s.code?.toUpperCase() === code);
+                if (school && school.password === pass) {
+                    window.rateLimiter.recordAttempt(code, true);
+                    setLoginError("");
+                    setIsSuperAdmin(false);
+                    setAdminSchool(school.id);
+                    setSelectedSchoolFilter(school.id); // Otomatik okul filtrele
+                    setIsLoggedIn(true);
+                    console.log(`✅ ${school.name} okul yöneticisi girişi başarılı!`);
+                    return;
+                }
+                
+                // Başarısız giriş - rate limiter güncelle
+                window.rateLimiter.recordAttempt(code, false);
+                
+                // Hata mesajları
+                if (!school) {
+                    setLoginError("❌ Geçersiz giriş kodu!");
+                } else {
+                    setLoginError("❌ Yanlış şifre! Tekrar deneyin.");
+                }
+            };
+
+            // 🔐 LOGIN SCREEN - KOD VE ŞİFRE İLE GİRİŞ
             if (!isLoggedIn) {
                 return (
                     <div className="min-h-screen flex items-center justify-center p-4">
@@ -2887,51 +3705,50 @@
                             {loginError && (
                                 <div className="bg-red-500/20 border-2 border-red-500 text-red-200 px-4 py-3 rounded-xl mb-4 flex items-center gap-2">
                                     <i className="fas fa-exclamation-triangle"></i>
-                                    <span className="font-bold">{loginError}</span>
+                                    <span className="font-bold text-sm">{loginError}</span>
                                 </div>
                             )}
                             
+                            {/* Giriş Kodu */}
+                            <input
+                                type="text"
+                                value={loginCode}
+                                onChange={e => {
+                                    setLoginCode(e.target.value.toUpperCase());
+                                    setLoginError("");
+                                }}
+                                className="input-fun w-full text-center mb-4 uppercase"
+                                placeholder="🏫 Giriş Kodu"
+                                autoFocus
+                            />
+                            
+                            {/* Şifre */}
                             <input
                                 type="password"
                                 value={password}
                                 onChange={e => {
                                     setPassword(e.target.value);
-                                    setLoginError(""); // Kullanıcı yazmaya başladığında hatayı temizle
+                                    setLoginError("");
                                 }}
                                 onKeyDown={e => {
                                     if (e.key === 'Enter') {
-                                        if (password === "1234") {
-                                            setLoginError("");
-                                            console.log("✅ Giriş başarılı!");
-                                            setIsLoggedIn(true);
-                                        } else if (password) {
-                                            setLoginError("❌ Yanlış şifre! Tekrar deneyin.");
-                                        }
+                                        handleLogin();
                                     }
                                 }}
                                 className="input-fun w-full text-center mb-4"
                                 placeholder="🔒 Şifre"
-                                autoFocus
                             />
                             
                             <button
-                                onClick={() => {
-                                    if (password === "1234") {
-                                        setLoginError("");
-                                        console.log("✅ Giriş başarılı!");
-                                        setIsLoggedIn(true);
-                                    } else if (password) {
-                                        setLoginError("❌ Yanlış şifre! Tekrar deneyin.");
-                                    } else {
-                                        setLoginError("⚠️ Lütfen şifre girin.");
-                                    }
-                                }}
+                                onClick={handleLogin}
                                 className="btn-candy btn-purple w-full"
                             >
                                 <i className="fas fa-sign-in-alt mr-2"></i> Giriş Yap
                             </button>
                             
-                            <p className="text-white/40 text-xs mt-4"></p>
+                            <p className="text-white/40 text-xs mt-4">
+                                Okul kodunuz ve şifreniz ile giriş yapın
+                            </p>
                         </div>
                     </div>
                 );
@@ -3191,7 +4008,7 @@
                                 {/* Eşleştirme Modu Seçimi */}
                                 <div className="mb-4 sm:mb-6">
                                     <h4 className="text-base sm:text-lg font-bold text-gray-700 mb-2 sm:mb-3 text-center">📋 Eşleştirme Modu</h4>
-                                    <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+                                    <div className={`grid gap-2 sm:gap-3 ${isSuperAdmin ? 'grid-cols-3 sm:grid-cols-3 lg:grid-cols-5' : 'grid-cols-2 sm:grid-cols-3'}`}>
                                         <button 
                                             onClick={() => setMatchingMode('random')} 
                                             className={`btn-candy py-2 sm:py-4 flex flex-col items-center gap-1 sm:gap-2 ${matchingMode === 'random' ? 'btn-blue ring-2 sm:ring-4 ring-blue-300' : 'btn-gray'}`}
@@ -3206,27 +4023,32 @@
                                             <span className="text-xl sm:text-2xl">✋</span>
                                             <span className="font-bold text-xs sm:text-sm">Manuel</span>
                                         </button>
-                                        <button 
-                                            onClick={() => setMatchingMode('school-random')} 
-                                            className={`btn-candy py-2 sm:py-4 flex flex-col items-center gap-1 sm:gap-2 ${matchingMode === 'school-random' ? 'btn-green ring-2 sm:ring-4 ring-green-300' : 'btn-gray'}`}
-                                        >
-                                            <span className="text-xl sm:text-2xl">🏫</span>
-                                            <span className="font-bold text-xs sm:text-sm">Okul İçi</span>
-                                        </button>
-                                        <button 
-                                            onClick={() => setMatchingMode('cross-school')} 
-                                            className={`btn-candy py-2 sm:py-4 flex flex-col items-center gap-1 sm:gap-2 ${matchingMode === 'cross-school' ? 'btn-yellow ring-2 sm:ring-4 ring-yellow-300' : 'btn-gray'}`}
-                                        >
-                                            <span className="text-lg sm:text-2xl">🏫🆚🏫</span>
-                                            <span className="font-bold text-xs sm:text-sm">Okullar Arası</span>
-                                        </button>
-                                        <button 
-                                            onClick={() => setMatchingMode('swiss')} 
-                                            className={`btn-candy py-2 sm:py-4 flex flex-col items-center gap-1 sm:gap-2 ${matchingMode === 'swiss' ? 'btn-red ring-2 sm:ring-4 ring-red-300' : 'btn-gray'}`}
-                                        >
-                                            <span className="text-xl sm:text-2xl">🏆</span>
-                                            <span className="font-bold text-xs sm:text-sm">İsviçre</span>
-                                        </button>
+                                        {/* Süper Admin için ek modlar */}
+                                        {isSuperAdmin && (
+                                            <>
+                                                <button 
+                                                    onClick={() => setMatchingMode('school-random')} 
+                                                    className={`btn-candy py-2 sm:py-4 flex flex-col items-center gap-1 sm:gap-2 ${matchingMode === 'school-random' ? 'btn-green ring-2 sm:ring-4 ring-green-300' : 'btn-gray'}`}
+                                                >
+                                                    <span className="text-xl sm:text-2xl">🏫</span>
+                                                    <span className="font-bold text-xs sm:text-sm">Okul İçi</span>
+                                                </button>
+                                                <button 
+                                                    onClick={() => setMatchingMode('cross-school')} 
+                                                    className={`btn-candy py-2 sm:py-4 flex flex-col items-center gap-1 sm:gap-2 ${matchingMode === 'cross-school' ? 'btn-yellow ring-2 sm:ring-4 ring-yellow-300' : 'btn-gray'}`}
+                                                >
+                                                    <span className="text-lg sm:text-2xl">🏫🆚🏫</span>
+                                                    <span className="font-bold text-xs sm:text-sm">Okullar Arası</span>
+                                                </button>
+                                                <button 
+                                                    onClick={() => setMatchingMode('swiss')} 
+                                                    className={`btn-candy py-2 sm:py-4 flex flex-col items-center gap-1 sm:gap-2 ${matchingMode === 'swiss' ? 'btn-red ring-2 sm:ring-4 ring-red-300' : 'btn-gray'}`}
+                                                >
+                                                    <span className="text-xl sm:text-2xl">🏆</span>
+                                                    <span className="font-bold text-xs sm:text-sm">İsviçre</span>
+                                                </button>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
 
@@ -3243,7 +4065,7 @@
                                                     className="input-fun w-full"
                                                 >
                                                     <option value="">Oyuncu Seçin...</option>
-                                                    {Object.entries(lobbyUsers)
+                                                    {Object.entries(filteredLobbyUsers)
                                                         .filter(([id, u]) => u.state === 'waiting' && id !== selectedPlayer2)
                                                         .map(([id, u]) => (
                                                             <option key={id} value={id}>{u.name} ({u.class})</option>
@@ -3259,7 +4081,7 @@
                                                     className="input-fun w-full"
                                                 >
                                                     <option value="">Oyuncu Seçin...</option>
-                                                    {Object.entries(lobbyUsers)
+                                                    {Object.entries(filteredLobbyUsers)
                                                         .filter(([id, u]) => u.state === 'waiting' && id !== selectedPlayer1)
                                                         .map(([id, u]) => (
                                                             <option key={id} value={id}>{u.name} ({u.class})</option>
@@ -3271,8 +4093,8 @@
                                     </div>
                                 )}
 
-                                {/* Okul İçi Rastgele Eşleştirme UI */}
-                                {matchingMode === 'school-random' && (
+                                {/* Okul İçi Rastgele Eşleştirme UI - Sadece Süper Admin */}
+                                {isSuperAdmin && matchingMode === 'school-random' && (
                                     <div className="mb-6 p-4 bg-green-50 rounded-xl">
                                         <h4 className="text-md font-bold text-green-700 mb-3">🏫 Okul Seçimi</h4>
                                         <div>
@@ -3291,8 +4113,8 @@
                                     </div>
                                 )}
 
-                                {/* Okullar Arası Eşleştirme UI */}
-                                {matchingMode === 'cross-school' && (
+                                {/* Okullar Arası Eşleştirme UI - Sadece Süper Admin */}
+                                {isSuperAdmin && matchingMode === 'cross-school' && (
                                     <div className="mb-6 p-4 bg-yellow-50 rounded-xl">
                                         <h4 className="text-md font-bold text-yellow-700 mb-3">🏫🆚🏫 İki Okul Seçimi</h4>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -3356,6 +4178,10 @@
                                             <span className="text-xl sm:text-3xl">🌐</span>
                                             <span className="font-bold text-xs sm:text-base">KÜRE</span>
                                         </button>
+                                        <button onClick={() => startTournament('abluka')} className="btn-candy bg-gradient-to-r from-gray-700 to-gray-900 active:from-gray-800 active:to-black text-white py-3 sm:py-6 flex flex-col items-center gap-1 sm:gap-2">
+                                            <span className="text-xl sm:text-3xl">🏰</span>
+                                            <span className="font-bold text-xs sm:text-base">ABLUKA</span>
+                                        </button>
                                         <button onClick={() => startTournament('qbitz')} className="btn-candy bg-gradient-to-r from-purple-500 to-pink-500 active:from-purple-600 active:to-pink-600 text-white py-3 sm:py-6 flex flex-col items-center gap-1 sm:gap-2">
                                             <span className="text-xl sm:text-3xl">🎲</span>
                                             <span className="font-bold text-xs sm:text-base">Q-BITZ</span>
@@ -3394,6 +4220,16 @@
                             <button onClick={() => setView("dashboard")} className={`tab-btn ${view === 'dashboard' ? 'active' : ''}`}>
                                 <i className="fas fa-gamepad sm:mr-2"></i><span className="hidden sm:inline">Turnuva</span>
                             </button>
+                            <button onClick={() => setView("interschool")} className={`tab-btn ${view === 'interschool' ? 'active' : ''}`}>
+                                <i className="fas fa-school-flag sm:mr-2"></i><span className="hidden sm:inline">Okullar Arası</span>
+                                {Object.values(interSchoolRequests).filter(r => 
+                                    r.status === 'pending' && (r.toSchool === adminSchool || isSuperAdmin)
+                                ).length > 0 && (
+                                    <span className="ml-1 bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                                        {Object.values(interSchoolRequests).filter(r => r.status === 'pending' && (r.toSchool === adminSchool || isSuperAdmin)).length}
+                                    </span>
+                                )}
+                            </button>
                             <button onClick={() => setView("students")} className={`tab-btn ${view === 'students' ? 'active' : ''}`}>
                                 <i className="fas fa-users sm:mr-2"></i><span className="hidden sm:inline">Öğrenciler</span>
                             </button>
@@ -3406,9 +4242,24 @@
                             </button>
                         </div>
                         
-                        <button onClick={() => setIsLoggedIn(false)} className="btn-candy btn-red order-2 sm:order-3">
-                            <i className="fas fa-sign-out-alt mr-2"></i>Çıkış
-                        </button>
+                        <div className="flex items-center gap-2 order-2 sm:order-3">
+                            {/* Giriş yapılan okul bilgisi */}
+                            {adminSchool && !isSuperAdmin && (
+                                <div className="hidden sm:flex items-center gap-2 bg-green-500/20 text-green-300 px-3 py-1 rounded-full text-sm">
+                                    <i className="fas fa-school"></i>
+                                    <span>{schools[adminSchool]?.name}</span>
+                                </div>
+                            )}
+                            {isSuperAdmin && (
+                                <div className="hidden sm:flex items-center gap-2 bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm">
+                                    <i className="fas fa-crown"></i>
+                                    <span>Süper Admin</span>
+                                </div>
+                            )}
+                            <button onClick={() => setIsLoggedIn(false)} className="btn-candy btn-red">
+                                <i className="fas fa-sign-out-alt mr-2"></i>Çıkış
+                            </button>
+                        </div>
                     </div>
 
                     {/* ===== DASHBOARD VIEW ===== */}
@@ -3461,10 +4312,10 @@
                                 {/* Lobby Users */}
                                 <div className="glass-card p-3 sm:p-5">
                                     <h3 className="text-white font-bold mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
-                                        <span className="wave">🎯</span> LOBİDEKİLER ({Object.keys(lobbyUsers).length})
+                                        <span className="wave">🎯</span> LOBİDEKİLER ({Object.keys(filteredLobbyUsers).length})
                                     </h3>
                                     <div className="space-y-2 max-h-[300px] sm:max-h-[500px] overflow-auto">
-                                        {Object.values(lobbyUsers).map((u, i) => (
+                                        {Object.values(filteredLobbyUsers).map((u, i) => (
                                             <div key={i} className={`user-card ${u.state === 'waiting' ? 'waiting' : 'playing'}`}>
                                                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white font-bold shadow text-sm sm:text-base">
                                                     {u.name.charAt(0)}
@@ -3478,7 +4329,7 @@
                                                 </span>
                                             </div>
                                         ))}
-                                        {Object.keys(lobbyUsers).length === 0 && (
+                                        {Object.keys(filteredLobbyUsers).length === 0 && (
                                             <div className="text-center py-8 text-white/40">
                                                 <div className="text-4xl mb-2">😴</div>
                                                 <p>Henüz kimse yok</p>
@@ -3613,7 +4464,12 @@
                             <div className="flex flex-col sm:flex-row sm:flex-wrap justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
                                 <h2 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center gap-2">
                                     <span className="wave">🎓</span> Kayıtlı Öğrenciler
-                                    <span className="text-gray-400 text-base sm:text-lg">({Object.keys(allUsers).length})</span>
+                                    {!isSuperAdmin && adminSchool && (
+                                        <span className="text-purple-600 text-base sm:text-lg">({schools[adminSchool]?.name})</span>
+                                    )}
+                                    <span className="text-gray-400 text-base sm:text-lg">
+                                        ({isSuperAdmin ? Object.keys(allUsers).length : Object.values(allUsers).filter(u => u.schoolId === adminSchool).length})
+                                    </span>
                                 </h2>
                                 
                                 <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
@@ -3638,17 +4494,19 @@
                                         ))}
                                     </select>
                                     
-                                    {/* Okul Filtresi */}
-                                    <select 
-                                        value={selectedSchoolFilter}
-                                        onChange={e => setSelectedSchoolFilter(e.target.value)} 
-                                        className="input-fun text-sm sm:text-base"
-                                    >
-                                        <option value="">🏫 Tüm Okullar</option>
-                                        {Object.values(schools).map(s => (
-                                            <option key={s.id} value={s.id}>{s.name}</option>
-                                        ))}
-                                    </select>
+                                    {/* Okul Filtresi - Sadece Süper Admin */}
+                                    {isSuperAdmin && (
+                                        <select 
+                                            value={selectedSchoolFilter}
+                                            onChange={e => setSelectedSchoolFilter(e.target.value)} 
+                                            className="input-fun text-sm sm:text-base"
+                                        >
+                                            <option value="">🏫 Tüm Okullar</option>
+                                            {Object.values(schools).map(s => (
+                                                <option key={s.id} value={s.id}>{s.name}</option>
+                                            ))}
+                                        </select>
+                                    )}
                                     
                                     {/* Görünüm Modu */}
                                     <div className="flex gap-1 sm:gap-2 bg-gray-100 rounded-lg p-1 w-full sm:w-auto justify-center">
@@ -4051,10 +4909,15 @@
                         <div className="glass-card-light p-4 sm:p-6 slide-up">
                             <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6 flex items-center gap-2">
                                 <span className="wave">✅</span> Onay Bekleyenler
+                                {!isSuperAdmin && adminSchool && (
+                                    <span className="text-sm font-normal text-gray-500">({schools[adminSchool]?.name})</span>
+                                )}
                             </h2>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                                {Object.entries(pendingUsers).map(([uid, u]) => (
+                                {Object.entries(pendingUsers)
+                                    .filter(([_, u]) => isSuperAdmin || u.schoolId === adminSchool)
+                                    .map(([uid, u]) => (
                                     <div key={uid} className="bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 rounded-2xl p-3 sm:p-5 pop-in">
                                         <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
                                             <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white text-lg sm:text-2xl font-bold shadow-lg">
@@ -4092,37 +4955,558 @@
                         </div>
                     )}
 
+                    {/* ===== INTER-SCHOOL TOURNAMENT VIEW ===== */}
+                    {view === "interschool" && (
+                        <div className="glass-card-light p-4 sm:p-6 slide-up">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                                <h2 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center gap-2">
+                                    <span className="wave">🏫</span> Okullar Arası Turnuva
+                                </h2>
+                                
+                                {adminSchool && !isSuperAdmin && (
+                                    <button 
+                                        onClick={() => setShowInterSchoolModal(true)}
+                                        className="btn-candy bg-gradient-to-r from-orange-500 to-red-500"
+                                    >
+                                        <i className="fas fa-paper-plane mr-2"></i> Turnuva İsteği Gönder
+                                    </button>
+                                )}
+                            </div>
+                            
+                            {/* Gelen İstekler */}
+                            <div className="mb-8">
+                                <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
+                                    <i className="fas fa-inbox text-blue-500"></i> Gelen İstekler
+                                </h3>
+                                <div className="space-y-4">
+                                    {Object.values(interSchoolRequests)
+                                        .filter(r => (r.toSchool === adminSchool || isSuperAdmin) && r.status === 'pending')
+                                        .map(request => (
+                                            <div key={request.id} className="bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-2xl p-4">
+                                                <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
+                                                    <div>
+                                                        <div className="font-bold text-gray-800 text-lg mb-1">
+                                                            📨 {request.fromSchoolName} → {request.toSchoolName}
+                                                        </div>
+                                                        <div className="text-sm text-gray-600 space-y-1">
+                                                            <div><i className="fas fa-calendar mr-2"></i>Tarih: {request.date}</div>
+                                                            <div><i className="fas fa-gamepad mr-2"></i>Oyunlar: {request.games.join(', ')}</div>
+                                                            <div><i className="fas fa-users mr-2"></i>Öğrenci Sayısı: {request.studentCount}</div>
+                                                            {request.description && (
+                                                                <div><i className="fas fa-comment mr-2"></i>{request.description}</div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <button 
+                                                            onClick={() => acceptInterSchoolRequest(request.id)}
+                                                            className="btn-candy btn-green py-2 px-4"
+                                                        >
+                                                            <i className="fas fa-check mr-1"></i> Kabul
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => {
+                                                                const reason = prompt('Red sebebi (opsiyonel):');
+                                                                rejectInterSchoolRequest(request.id, reason || '');
+                                                            }}
+                                                            className="btn-candy btn-red py-2 px-4"
+                                                        >
+                                                            <i className="fas fa-times mr-1"></i> Red
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    {Object.values(interSchoolRequests).filter(r => (r.toSchool === adminSchool || isSuperAdmin) && r.status === 'pending').length === 0 && (
+                                        <div className="text-center py-8 text-gray-400">
+                                            <i className="fas fa-inbox text-4xl mb-2"></i>
+                                            <p>Gelen istek yok</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            {/* Gönderilen İstekler */}
+                            <div className="mb-8">
+                                <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
+                                    <i className="fas fa-paper-plane text-orange-500"></i> Gönderilen İstekler
+                                </h3>
+                                <div className="space-y-4">
+                                    {Object.values(interSchoolRequests)
+                                        .filter(r => (r.fromSchool === adminSchool || isSuperAdmin))
+                                        .map(request => (
+                                            <div key={request.id} className={`border-2 rounded-2xl p-4 ${
+                                                request.status === 'accepted' ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-300' :
+                                                request.status === 'rejected' ? 'bg-gradient-to-r from-red-50 to-rose-50 border-red-300' :
+                                                'bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200'
+                                            }`}>
+                                                <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
+                                                    <div>
+                                                        <div className="font-bold text-gray-800 text-lg mb-1 flex items-center gap-2">
+                                                            📤 {request.fromSchoolName} → {request.toSchoolName}
+                                                            <span className={`text-xs px-2 py-1 rounded-full ${
+                                                                request.status === 'accepted' ? 'bg-green-200 text-green-800' :
+                                                                request.status === 'rejected' ? 'bg-red-200 text-red-800' :
+                                                                request.status === 'active' ? 'bg-blue-200 text-blue-800' :
+                                                                'bg-orange-200 text-orange-800'
+                                                            }`}>
+                                                                {request.status === 'accepted' ? '✓ Kabul Edildi' :
+                                                                 request.status === 'rejected' ? '✗ Reddedildi' :
+                                                                 request.status === 'active' ? '🎮 Devam Ediyor' : '⏳ Bekliyor'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="text-sm text-gray-600 space-y-1">
+                                                            <div><i className="fas fa-calendar mr-2"></i>Tarih: {request.date}</div>
+                                                            <div><i className="fas fa-gamepad mr-2"></i>Oyunlar: {request.games.join(', ')}</div>
+                                                            <div><i className="fas fa-users mr-2"></i>Öğrenci: {request.studentCount} (her okul)</div>
+                                                            {request.rejectionReason && (
+                                                                <div className="text-red-600"><i className="fas fa-comment-slash mr-2"></i>Red sebebi: {request.rejectionReason}</div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    {/* Kabul edildiyse öğrenci seçimi */}
+                                                    {request.status === 'accepted' && (
+                                                        <div className="flex flex-col gap-2">
+                                                            <div className="text-sm">
+                                                                <span className="text-gray-600">Seçilen: </span>
+                                                                <span className="font-bold text-blue-600">
+                                                                    {request.fromSchool === adminSchool 
+                                                                        ? `${request.fromSchoolStudents?.length || 0}/${request.studentCount}`
+                                                                        : `${request.toSchoolStudents?.length || 0}/${request.studentCount}`
+                                                                    }
+                                                                </span>
+                                                            </div>
+                                                            <button 
+                                                                onClick={() => setShowStudentSelectModal(request.id)}
+                                                                className="btn-candy bg-gradient-to-r from-blue-500 to-cyan-500 py-2 px-3 text-sm"
+                                                            >
+                                                                <i className="fas fa-user-plus mr-1"></i> Öğrenci Seç
+                                                            </button>
+                                                            {(request.fromSchoolStudents?.length > 0 && request.toSchoolStudents?.length > 0 && 
+                                                              request.fromSchoolStudents.length === request.toSchoolStudents.length) && (
+                                                                <>
+                                                                    <button 
+                                                                        onClick={() => startInterSchoolTournament(request.id)}
+                                                                        className="btn-candy btn-green py-2 px-3 text-sm"
+                                                                    >
+                                                                        <i className="fas fa-play mr-1"></i> Başlat
+                                                                    </button>
+                                                                    <button 
+                                                                        onClick={() => generateInterSchoolReport(request.id)}
+                                                                        className="btn-candy bg-gradient-to-r from-red-500 to-orange-500 py-2 px-3 text-sm"
+                                                                    >
+                                                                        <i className="fas fa-file-pdf mr-1"></i> Rapor
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    {Object.values(interSchoolRequests).filter(r => r.fromSchool === adminSchool || isSuperAdmin).length === 0 && (
+                                        <div className="text-center py-8 text-gray-400">
+                                            <i className="fas fa-paper-plane text-4xl mb-2"></i>
+                                            <p>Gönderilen istek yok</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            {/* Aktif Turnuvalar */}
+                            <div>
+                                <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
+                                    <i className="fas fa-trophy text-yellow-500"></i> Aktif Okullar Arası Turnuvalar
+                                </h3>
+                                <div className="space-y-4">
+                                    {Object.values(interSchoolRequests)
+                                        .filter(r => r.status === 'active' && (r.fromSchool === adminSchool || r.toSchool === adminSchool || isSuperAdmin))
+                                        .map(request => (
+                                            <div key={request.id} className="bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-300 rounded-2xl p-4">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <div className="font-bold text-gray-800 text-lg">
+                                                        🏆 {request.fromSchoolName} vs {request.toSchoolName}
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => generateInterSchoolReport(request.id)}
+                                                        className="btn-candy bg-gradient-to-r from-red-500 to-orange-500 py-1 px-3 text-sm"
+                                                    >
+                                                        <i className="fas fa-file-pdf mr-1"></i> PDF Rapor
+                                                    </button>
+                                                </div>
+                                                <div className="text-sm text-gray-600 mb-3">
+                                                    <span className="mr-4"><i className="fas fa-calendar mr-1"></i>{request.date}</span>
+                                                    <span><i className="fas fa-gamepad mr-1"></i>{request.games.join(', ')}</span>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="bg-white/50 rounded-xl p-3">
+                                                        <div className="font-bold text-sm mb-2">{request.fromSchoolName}</div>
+                                                        <div className="text-xs text-gray-600">
+                                                            {request.fromSchoolStudents?.map(uid => allUsers[uid]?.name || uid).join(', ')}
+                                                        </div>
+                                                    </div>
+                                                    <div className="bg-white/50 rounded-xl p-3">
+                                                        <div className="font-bold text-sm mb-2">{request.toSchoolName}</div>
+                                                        <div className="text-xs text-gray-600">
+                                                            {request.toSchoolStudents?.map(uid => allUsers[uid]?.name || uid).join(', ')}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    {Object.values(interSchoolRequests).filter(r => r.status === 'active').length === 0 && (
+                                        <div className="text-center py-8 text-gray-400">
+                                            <i className="fas fa-trophy text-4xl mb-2"></i>
+                                            <p>Aktif okullar arası turnuva yok</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Okullar Arası Turnuva İstek Modalı */}
+                    {showInterSchoolModal && (
+                        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                            <div className="glass-card-light p-6 max-w-lg w-full pop-in max-h-[90vh] overflow-y-auto">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                        <i className="fas fa-paper-plane text-orange-500"></i> Turnuva İsteği Gönder
+                                    </h3>
+                                    <button onClick={() => setShowInterSchoolModal(false)} className="text-gray-400 hover:text-gray-600">
+                                        <i className="fas fa-times text-xl"></i>
+                                    </button>
+                                </div>
+                                
+                                <div className="space-y-4">
+                                    {/* Hedef Okul */}
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">🏫 Rakip Okul</label>
+                                        <select 
+                                            value={interSchoolForm.targetSchool}
+                                            onChange={e => setInterSchoolForm({...interSchoolForm, targetSchool: e.target.value})}
+                                            className="input-fun w-full"
+                                        >
+                                            <option value="">Okul Seçin</option>
+                                            {Object.values(schools)
+                                                .filter(s => s.id !== adminSchool)
+                                                .map(s => (
+                                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                                ))}
+                                        </select>
+                                    </div>
+                                    
+                                    {/* Tarih */}
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">📅 Turnuva Tarihi</label>
+                                        <input 
+                                            type="date"
+                                            value={interSchoolForm.date}
+                                            onChange={e => setInterSchoolForm({...interSchoolForm, date: e.target.value})}
+                                            className="input-fun w-full"
+                                            min={new Date().toISOString().split('T')[0]}
+                                        />
+                                    </div>
+                                    
+                                    {/* Oyunlar */}
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">🎮 Oyunlar</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {['Mangala', 'Reversi', 'Pentago', 'Kulami', 'Küre', 'Q-bitz', 'Abluka'].map(game => (
+                                                <button
+                                                    key={game}
+                                                    onClick={() => {
+                                                        const games = interSchoolForm.games.includes(game)
+                                                            ? interSchoolForm.games.filter(g => g !== game)
+                                                            : [...interSchoolForm.games, game];
+                                                        setInterSchoolForm({...interSchoolForm, games});
+                                                    }}
+                                                    className={`px-3 py-2 rounded-xl text-sm font-bold transition-all ${
+                                                        interSchoolForm.games.includes(game)
+                                                            ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
+                                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                    }`}
+                                                >
+                                                    {game}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Öğrenci Sayısı */}
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">👥 Öğrenci Sayısı (her okul için)</label>
+                                        <input 
+                                            type="number"
+                                            value={interSchoolForm.studentCount}
+                                            onChange={e => setInterSchoolForm({...interSchoolForm, studentCount: Math.min(50, Math.max(1, parseInt(e.target.value) || 1))})}
+                                            className="input-fun w-full"
+                                            min="1"
+                                            max="50"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">Minimum 1, maksimum 50 öğrenci</p>
+                                    </div>
+                                    
+                                    {/* Açıklama */}
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">💬 Açıklama (opsiyonel)</label>
+                                        <textarea 
+                                            value={interSchoolForm.description}
+                                            onChange={e => setInterSchoolForm({...interSchoolForm, description: e.target.value})}
+                                            className="input-fun w-full"
+                                            rows="3"
+                                            placeholder="Turnuva hakkında not..."
+                                        />
+                                    </div>
+                                    
+                                    <button 
+                                        onClick={sendInterSchoolRequest}
+                                        className="btn-candy bg-gradient-to-r from-orange-500 to-red-500 w-full py-3"
+                                    >
+                                        <i className="fas fa-paper-plane mr-2"></i> İstek Gönder
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Öğrenci Seçim Modalı */}
+                    {showStudentSelectModal && (
+                        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                            <div className="glass-card-light p-6 max-w-2xl w-full pop-in max-h-[90vh] overflow-y-auto">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                        <i className="fas fa-user-plus text-blue-500"></i> Turnuvaya Öğrenci Seç
+                                    </h3>
+                                    <button onClick={() => {
+                                        setShowStudentSelectModal(null);
+                                        setSelectedInterSchoolStudents(new Set());
+                                    }} className="text-gray-400 hover:text-gray-600">
+                                        <i className="fas fa-times text-xl"></i>
+                                    </button>
+                                </div>
+                                
+                                {(() => {
+                                    const request = interSchoolRequests[showStudentSelectModal];
+                                    if (!request) return null;
+                                    
+                                    const myStudents = Object.entries(allUsers)
+                                        .filter(([_, u]) => u.schoolId === adminSchool);
+                                    
+                                    return (
+                                        <div>
+                                            <div className="mb-4 text-sm text-gray-600">
+                                                <strong>Maks seçim:</strong> {request.studentCount} öğrenci | 
+                                                <strong> Seçili:</strong> {selectedInterSchoolStudents.size}
+                                            </div>
+                                            
+                                            <div className="space-y-2 max-h-96 overflow-y-auto mb-4">
+                                                {myStudents.map(([uid, user]) => (
+                                                    <div 
+                                                        key={uid}
+                                                        onClick={() => {
+                                                            const newSet = new Set(selectedInterSchoolStudents);
+                                                            if (newSet.has(uid)) {
+                                                                newSet.delete(uid);
+                                                            } else if (newSet.size < request.studentCount) {
+                                                                newSet.add(uid);
+                                                            }
+                                                            setSelectedInterSchoolStudents(newSet);
+                                                        }}
+                                                        className={`p-3 rounded-xl cursor-pointer transition-all flex justify-between items-center ${
+                                                            selectedInterSchoolStudents.has(uid)
+                                                                ? 'bg-gradient-to-r from-blue-100 to-cyan-100 border-2 border-blue-400'
+                                                                : 'bg-gray-50 border-2 border-transparent hover:border-gray-200'
+                                                        }`}
+                                                    >
+                                                        <div>
+                                                            <div className="font-bold text-gray-800">{user.name}</div>
+                                                            <div className="text-sm text-gray-500">{user.class} - No: {user.number}</div>
+                                                        </div>
+                                                        {selectedInterSchoolStudents.has(uid) && (
+                                                            <i className="fas fa-check-circle text-blue-500 text-xl"></i>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            
+                                            <button 
+                                                onClick={() => addStudentsToInterSchool(showStudentSelectModal, Array.from(selectedInterSchoolStudents))}
+                                                disabled={selectedInterSchoolStudents.size === 0}
+                                                className="btn-candy bg-gradient-to-r from-green-500 to-emerald-500 w-full py-3 disabled:opacity-50"
+                                            >
+                                                <i className="fas fa-check mr-2"></i> {selectedInterSchoolStudents.size} Öğrenciyi Onayla
+                                            </button>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        </div>
+                    )}
+
                     {/* ===== SCHOOLS VIEW ===== */}
                     {view === "schools" && (
                         <div className="glass-card-light p-4 sm:p-6 slide-up">
                             <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6 flex items-center gap-2">
                                 <span className="wave">🏫</span> Okul Yönetimi
+                                {adminSchool && !isSuperAdmin && (
+                                    <span className="text-sm font-normal text-gray-500 ml-2">
+                                        ({schools[adminSchool]?.name} - Sadece görüntüleme)
+                                    </span>
+                                )}
                             </h2>
 
-                            {/* Add School Form */}
-                            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4 sm:mb-6">
-                                <input
-                                    value={newSchoolName}
-                                    onChange={e => setNewSchoolName(e.target.value)}
-                                    placeholder="Yeni Okul Adı"
-                                    className="input-fun flex-1"
-                                />
-                                <button onClick={addSchool} className="btn-candy btn-teal">
-                                    <i className="fas fa-plus mr-2"></i> Ekle
-                                </button>
-                            </div>
+                            {/* Add School Form - Sadece Süper Admin */}
+                            {isSuperAdmin && (
+                                <div className="bg-gradient-to-r from-teal-50 to-cyan-50 border-2 border-teal-200 rounded-2xl p-4 mb-6">
+                                    <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                                        <i className="fas fa-plus-circle text-teal-500"></i> Yeni Okul Ekle
+                                    </h3>
+                                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 sm:gap-3">
+                                        <input
+                                            value={newSchoolName}
+                                            onChange={e => setNewSchoolName(e.target.value)}
+                                            placeholder="Okul Adı"
+                                            className="input-fun"
+                                        />
+                                        <input
+                                            value={newSchoolCode}
+                                            onChange={e => setNewSchoolCode(e.target.value.toUpperCase())}
+                                            placeholder="Giriş Kodu (min 3)"
+                                            className="input-fun uppercase"
+                                            maxLength="10"
+                                        />
+                                        <input
+                                            type="password"
+                                            value={newSchoolPassword}
+                                            onChange={e => setNewSchoolPassword(e.target.value)}
+                                            placeholder="Şifre (min 4)"
+                                            className="input-fun"
+                                        />
+                                        <button onClick={addSchool} className="btn-candy btn-teal">
+                                            <i className="fas fa-plus mr-2"></i> Ekle
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Schools List */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                                {Object.values(schools).map(school => (
-                                    <div key={school.id} className="bg-gradient-to-br from-teal-50 to-cyan-50 border-2 border-teal-200 rounded-2xl p-3 sm:p-5 flex justify-between items-center">
-                                        <div className="flex items-center gap-2 sm:gap-3">
-                                            <div className="text-2xl sm:text-3xl">🏫</div>
-                                            <span className="font-bold text-gray-800 text-sm sm:text-lg">{school.name}</span>
+                                {Object.values(schools)
+                                    .filter(school => isSuperAdmin || school.id === adminSchool)
+                                    .map(school => (
+                                    <div key={school.id} className={`bg-gradient-to-br ${adminSchool === school.id ? 'from-green-50 to-emerald-50 border-green-400' : 'from-teal-50 to-cyan-50 border-teal-200'} border-2 rounded-2xl p-3 sm:p-5`}>
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div className="flex items-center gap-2 sm:gap-3">
+                                                <div className="text-2xl sm:text-3xl">🏫</div>
+                                                <div>
+                                                    <span className="font-bold text-gray-800 text-sm sm:text-lg block">{school.name}</span>
+                                                    {/* Kod sadece süper admin veya kendi okulu için göster */}
+                                                    {isSuperAdmin && (
+                                                        <span className="text-xs text-blue-600 font-mono bg-blue-100 px-2 py-0.5 rounded">
+                                                            Kod: {school.code || 'YOK'}
+                                                        </span>
+                                                    )}
+                                                    {adminSchool === school.id && !isSuperAdmin && (
+                                                        <span className="text-xs text-green-600 font-bold">✓ Okulunuz</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            {isSuperAdmin && (
+                                                <button onClick={() => deleteSchool(school.id)} className="btn-candy btn-red py-2 px-3 text-sm">
+                                                    <i className="fas fa-trash"></i>
+                                                </button>
+                                            )}
                                         </div>
-                                        <button onClick={() => deleteSchool(school.id)} className="btn-candy btn-red py-2 px-3 sm:px-4 text-sm">
-                                            <i className="fas fa-trash"></i>
-                                        </button>
+                                        
+                                        {/* Öğrenci Sayısı */}
+                                        <div className="text-sm text-gray-600 mb-2">
+                                            <i className="fas fa-users mr-1"></i>
+                                            {Object.values(allUsers).filter(u => u.schoolId === school.id).length} öğrenci
+                                        </div>
+                                        
+                                        {/* Okulun Rozetleri */}
+                                        <div className="mb-3">
+                                            <button 
+                                                onClick={() => {
+                                                    setSelectedSchoolForBadges(school);
+                                                    setShowSchoolBadgeModal(true);
+                                                }}
+                                                className="w-full text-left"
+                                            >
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    {(school.badges || []).length > 0 ? (
+                                                        (school.badges || []).map(badgeKey => (
+                                                            SCHOOL_BADGES[badgeKey] && (
+                                                                <span 
+                                                                    key={badgeKey} 
+                                                                    className="text-lg sm:text-xl cursor-pointer hover:scale-125 transition-transform"
+                                                                    title={SCHOOL_BADGES[badgeKey].name}
+                                                                >
+                                                                    {SCHOOL_BADGES[badgeKey].icon}
+                                                                </span>
+                                                            )
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-xs text-gray-400 italic">
+                                                            🏅 Rozet yok - tıklayın
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </button>
+                                        </div>
+                                        
+                                        {/* Şifre ve Kod Güncelleme - Süper Admin veya Kendi Okulu */}
+                                        {(isSuperAdmin || adminSchool === school.id) && (
+                                            <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
+                                                {/* Kod Güncelleme - Sadece Süper Admin */}
+                                                {isSuperAdmin && (
+                                                    <div className="flex gap-2">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Yeni kod"
+                                                            className="input-fun text-sm flex-1 py-1 uppercase"
+                                                            id={`school-code-${school.id}`}
+                                                            maxLength="10"
+                                                        />
+                                                        <button 
+                                                            onClick={() => {
+                                                                const input = document.getElementById(`school-code-${school.id}`);
+                                                                if (input?.value) {
+                                                                    updateSchoolCode(school.id, input.value);
+                                                                    input.value = '';
+                                                                }
+                                                            }}
+                                                            className="btn-candy bg-gradient-to-r from-purple-500 to-purple-600 text-white py-1 px-3 text-sm"
+                                                        >
+                                                            <i className="fas fa-tag"></i>
+                                                        </button>
+                                                    </div>
+                                                )}
+                                                {/* Şifre Güncelleme */}
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="password"
+                                                        placeholder="Yeni şifre"
+                                                        className="input-fun text-sm flex-1 py-1"
+                                                        id={`school-pass-${school.id}`}
+                                                    />
+                                                    <button 
+                                                        onClick={() => {
+                                                            const input = document.getElementById(`school-pass-${school.id}`);
+                                                            if (input?.value) {
+                                                                updateSchoolPassword(school.id, input.value);
+                                                                input.value = '';
+                                                            }
+                                                        }}
+                                                        className="btn-candy bg-gradient-to-r from-blue-500 to-blue-600 text-white py-1 px-3 text-sm"
+                                                    >
+                                                        <i className="fas fa-key"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
 
@@ -4133,6 +5517,112 @@
                                     </div>
                                 )}
                             </div>
+
+                            {/* 🏫 Okul Rozet Modalı */}
+                            {showSchoolBadgeModal && selectedSchoolForBadges && (
+                                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowSchoolBadgeModal(false)}>
+                                    <div className="bg-white rounded-3xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                                        <div className="flex justify-between items-center mb-6">
+                                            <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+                                                <span>🏫</span>
+                                                {selectedSchoolForBadges.name}
+                                            </h3>
+                                            <button 
+                                                onClick={() => setShowSchoolBadgeModal(false)}
+                                                className="text-gray-400 hover:text-gray-600 text-2xl"
+                                            >
+                                                <i className="fas fa-times"></i>
+                                            </button>
+                                        </div>
+
+                                        {/* Okul Bilgileri */}
+                                        <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 mb-6">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <span className="text-gray-500 text-sm">Öğrenci Sayısı</span>
+                                                    <div className="font-bold text-xl text-blue-600">
+                                                        {Object.values(allUsers).filter(u => u.schoolId === selectedSchoolForBadges.id).length}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <span className="text-gray-500 text-sm">Rozet Sayısı</span>
+                                                    <div className="font-bold text-xl text-purple-600">
+                                                        {(selectedSchoolForBadges.badges || []).length}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Mevcut Rozetler */}
+                                        <div className="mb-6">
+                                            <h4 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
+                                                <i className="fas fa-medal text-yellow-500"></i> Mevcut Rozetler
+                                            </h4>
+                                            {(selectedSchoolForBadges.badges || []).length > 0 ? (
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                                    {(selectedSchoolForBadges.badges || []).map(badgeKey => {
+                                                        const badge = SCHOOL_BADGES[badgeKey];
+                                                        if (!badge) return null;
+                                                        const rarity = RARITY_COLORS[badge.rarity] || RARITY_COLORS.common;
+                                                        return (
+                                                            <div key={badgeKey} className={`${rarity.bg} ${rarity.border} border-2 rounded-xl p-3 relative group`}>
+                                                                <div className="text-center">
+                                                                    <div className="text-3xl mb-1">{badge.icon}</div>
+                                                                    <div className={`font-bold text-sm ${rarity.text}`}>{badge.name}</div>
+                                                                    <div className="text-xs text-gray-500">{badge.desc}</div>
+                                                                </div>
+                                                                {isSuperAdmin && (
+                                                                    <button
+                                                                        onClick={() => removeSchoolBadge(selectedSchoolForBadges.id, badgeKey)}
+                                                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                        title="Rozeti Kaldır"
+                                                                    >
+                                                                        <i className="fas fa-times"></i>
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                <div className="text-center py-8 text-gray-400">
+                                                    <div className="text-4xl mb-2">🏅</div>
+                                                    <p>Henüz rozet kazanılmadı</p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Rozet Ver - Sadece Süper Admin */}
+                                        {isSuperAdmin && (
+                                            <div>
+                                                <h4 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
+                                                    <i className="fas fa-gift text-green-500"></i> Rozet Ver
+                                                </h4>
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                                    {Object.entries(SCHOOL_BADGES).map(([badgeKey, badge]) => {
+                                                        const alreadyHas = (selectedSchoolForBadges.badges || []).includes(badgeKey);
+                                                        const rarity = RARITY_COLORS[badge.rarity] || RARITY_COLORS.common;
+                                                        return (
+                                                            <button
+                                                                key={badgeKey}
+                                                                onClick={() => !alreadyHas && giveSchoolBadge(selectedSchoolForBadges.id, badgeKey)}
+                                                                disabled={alreadyHas || operationInProgress}
+                                                                className={`${rarity.bg} ${rarity.border} border-2 rounded-xl p-3 text-center transition-all ${
+                                                                    alreadyHas ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 hover:shadow-lg cursor-pointer'
+                                                                }`}
+                                                            >
+                                                                <div className="text-2xl mb-1">{badge.icon}</div>
+                                                                <div className={`font-bold text-xs ${rarity.text}`}>{badge.name}</div>
+                                                                {alreadyHas && <span className="text-xs text-green-600">✓ Var</span>}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
